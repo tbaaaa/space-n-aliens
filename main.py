@@ -5,8 +5,8 @@ import random
 pygame.init()
 
 # Screen dimensions
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+SCREEN_WIDTH = 1000
+SCREEN_HEIGHT = 800
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Space N Aliens")
 
@@ -90,6 +90,10 @@ while running:
             player_x -= player_speed
         if keys[pygame.K_d] and player_x < SCREEN_WIDTH - player_width:
             player_x += player_speed
+        if keys[pygame.K_w] and player_y > 0:
+            player_y -= player_speed
+        if keys[pygame.K_s] and player_y < SCREEN_HEIGHT - player_height:
+            player_y += player_speed
         if keys[pygame.K_SPACE] and frame_count % 5 == 0:  # Limit shooting rate
             bullets.append([player_x + player_width // 2 - bullet_width // 2, player_y])
 
