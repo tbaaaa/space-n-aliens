@@ -16,7 +16,7 @@ This is a game that will be made as a 2d spaceship alien shooter, made entirley 
 Run the game with: `python main.py`
 
 ### Controls
-- Left/Right Arrow Keys: Move the spaceship
+- A/D Keys: Move the spaceship left/right
 - Spacebar: Shoot bullets
 - Shoot the red aliens before they reach the bottom!
 

@@ -56,9 +56,9 @@ while running:
 
     # Player movement
     keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT] and player_x > 0:
+    if keys[pygame.K_a] and player_x > 0:
         player_x -= player_speed
-    if keys[pygame.K_RIGHT] and player_x < SCREEN_WIDTH - player_width:
+    if keys[pygame.K_d] and player_x < SCREEN_WIDTH - player_width:
         player_x += player_speed
     if keys[pygame.K_SPACE] and frame_count % 10 == 0:  # Limit shooting rate
         bullets.append([player_x + player_width // 2 - bullet_width // 2, player_y])
