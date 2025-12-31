@@ -1,6 +1,8 @@
 # Space and Aliens!
 This is a game that will be made as a 2d spaceship alien shooter, made entirley in python.
 
+Qucik! The aliens invaded your galaxy. Fight back and take back your home! It won't be easy :)
+
 ## Guide
 
 ### Prerequisites
