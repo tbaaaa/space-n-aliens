@@ -81,9 +81,16 @@ while running:
             elif exit_button.collidepoint(event.pos):
                 running = False
         elif event.type == pygame.MOUSEBUTTONDOWN and game_state == 'game_over':
-            if button_rect.collidepoint(event.pos):
+            retry_button = pygame.Rect(SCREEN_WIDTH // 2 - 60, SCREEN_HEIGHT // 2 - 30, 120, 40)
+            back_button = pygame.Rect(SCREEN_WIDTH // 2 - 80, SCREEN_HEIGHT // 2 + 20, 160, 40)
+            exit_button = pygame.Rect(SCREEN_WIDTH // 2 - 60, SCREEN_HEIGHT // 2 + 70, 120, 40)
+            if retry_button.collidepoint(event.pos):
                 reset_game()
                 game_state = 'playing'
+            elif back_button.collidepoint(event.pos):
+                game_state = 'title'
+            elif exit_button.collidepoint(event.pos):
+                running = False
         elif event.type == pygame.MOUSEBUTTONDOWN and game_state == 'paused':
             resume_button = pygame.Rect(SCREEN_WIDTH // 2 - 80, SCREEN_HEIGHT // 2 - 30, 160, 40)
             back_button = pygame.Rect(SCREEN_WIDTH // 2 - 90, SCREEN_HEIGHT // 2 + 20, 180, 40)
@@ -223,12 +230,21 @@ while running:
     elif game_state == 'game_over':
         # Draw game over
         game_over_text = font.render(f"Game Over! Score: {score}", True, WHITE)
-        screen.blit(game_over_text, (SCREEN_WIDTH // 2 - 150, SCREEN_HEIGHT // 2 - 50))
-        # Draw button
-        button_rect = pygame.Rect(SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2, 100, 50)
-        pygame.draw.rect(screen, GREEN, button_rect)
+        screen.blit(game_over_text, (SCREEN_WIDTH // 2 - 150, SCREEN_HEIGHT // 2 - 80))
+        # Define buttons
+        retry_button = pygame.Rect(SCREEN_WIDTH // 2 - 60, SCREEN_HEIGHT // 2 - 30, 120, 40)
+        back_button = pygame.Rect(SCREEN_WIDTH // 2 - 80, SCREEN_HEIGHT // 2 + 20, 160, 40)
+        exit_button = pygame.Rect(SCREEN_WIDTH // 2 - 60, SCREEN_HEIGHT // 2 + 70, 120, 40)
+        # Draw buttons
+        pygame.draw.rect(screen, GREEN, retry_button)
         retry_text = font.render("Retry", True, BLACK)
-        screen.blit(retry_text, (SCREEN_WIDTH // 2 - 25, SCREEN_HEIGHT // 2 + 10))
+        screen.blit(retry_text, (SCREEN_WIDTH // 2 - 25, SCREEN_HEIGHT // 2 - 20))
+        pygame.draw.rect(screen, BLUE, back_button)
+        back_text = font.render("Back to Title", True, BLACK)
+        screen.blit(back_text, (SCREEN_WIDTH // 2 - 70, SCREEN_HEIGHT // 2 + 30))
+        pygame.draw.rect(screen, RED, exit_button)
+        exit_text = font.render("Exit", True, BLACK)
+        screen.blit(exit_text, (SCREEN_WIDTH // 2 - 20, SCREEN_HEIGHT // 2 + 80))
 
     pygame.display.flip()
     clock.tick(FPS)
