@@ -18,6 +18,7 @@ RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 PURPLE = (128, 0, 128)
+YELLOW = (255, 255, 0)
 
 # Player
 player_width = 50
@@ -154,7 +155,14 @@ while running:
 
         # Draw player (with flashing effect during invincibility)
         if not invincible or (invincible_timer // 10) % 2 == 0:  # Flash every 10 frames
-            pygame.draw.rect(screen, GREEN, (player_x, player_y, player_width, player_height))
+            # Choose color based on HP
+            if player_hp == 3:
+                player_color = GREEN
+            elif player_hp == 2:
+                player_color = YELLOW
+            else:  # player_hp == 1
+                player_color = RED
+            pygame.draw.rect(screen, player_color, (player_x, player_y, player_width, player_height))
 
         # Draw aiming line (only when playing)
         if game_state == 'playing':
