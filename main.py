@@ -27,7 +27,7 @@ player_speed = 8
 # Bullet
 bullet_width = 5
 bullet_height = 10
-bullet_speed = 20
+bullet_speed = 35
 bullets = []
 
 # Enemy
@@ -83,6 +83,13 @@ while running:
             if button_rect.collidepoint(event.pos):
                 reset_game()
                 game_state = 'playing'
+        elif event.type == pygame.MOUSEBUTTONDOWN and game_state == 'paused':
+            back_button = pygame.Rect(SCREEN_WIDTH // 2 - 60, SCREEN_HEIGHT // 2 - 20, 120, 40)
+            exit_button = pygame.Rect(SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2 + 30, 100, 40)
+            if back_button.collidepoint(event.pos):
+                game_state = 'title'
+            elif exit_button.collidepoint(event.pos):
+                running = False
 
     if game_state == 'title':
         # Define buttons
@@ -172,6 +179,10 @@ while running:
         score_text = font.render(f"Score: {score}", True, WHITE)
         screen.blit(score_text, (10, 10))
 
+        # Check for pause
+        if keys[pygame.K_ESCAPE]:
+            game_state = 'paused'
+
     elif game_state == 'game_over':
         # Draw game over
         game_over_text = font.render(f"Game Over! Score: {score}", True, WHITE)
@@ -181,6 +192,21 @@ while running:
         pygame.draw.rect(screen, GREEN, button_rect)
         retry_text = font.render("Retry", True, BLACK)
         screen.blit(retry_text, (SCREEN_WIDTH // 2 - 25, SCREEN_HEIGHT // 2 + 10))
+
+    elif game_state == 'paused':
+        # Draw paused menu
+        pause_text = font.render("Paused", True, WHITE)
+        screen.blit(pause_text, (SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2 - 80))
+        # Define buttons
+        back_button = pygame.Rect(SCREEN_WIDTH // 2 - 60, SCREEN_HEIGHT // 2 - 20, 120, 40)
+        exit_button = pygame.Rect(SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2 + 30, 100, 40)
+        # Draw buttons
+        pygame.draw.rect(screen, BLUE, back_button)
+        back_text = font.render("Back to Title", True, BLACK)
+        screen.blit(back_text, (SCREEN_WIDTH // 2 - 55, SCREEN_HEIGHT // 2 - 10))
+        pygame.draw.rect(screen, RED, exit_button)
+        exit_text = font.render("Exit", True, BLACK)
+        screen.blit(exit_text, (SCREEN_WIDTH // 2 - 20, SCREEN_HEIGHT // 2 + 40))
 
     pygame.display.flip()
     clock.tick(FPS)
