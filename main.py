@@ -40,9 +40,6 @@ enemy_spawn_rate = 45  # frames
 score = 0
 font = pygame.font.Font(None, 36)
 
-# Button
-button_rect = pygame.Rect(SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2, 100, 50)
-
 # Game state
 game_state = 'title'
 
@@ -146,6 +143,7 @@ while running:
         game_over_text = font.render(f"Game Over! Score: {score}", True, WHITE)
         screen.blit(game_over_text, (SCREEN_WIDTH // 2 - 150, SCREEN_HEIGHT // 2 - 50))
         # Draw button
+        button_rect = pygame.Rect(SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2, 100, 50)
         pygame.draw.rect(screen, GREEN, button_rect)
         retry_text = font.render("Retry", True, BLACK)
         screen.blit(retry_text, (SCREEN_WIDTH // 2 - 25, SCREEN_HEIGHT // 2 + 10))
