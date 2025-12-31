@@ -21,7 +21,7 @@ PURPLE = (128, 0, 128)
 YELLOW = (255, 255, 0)
 
 # Difficulty tuning
-LEVEL_SIZE = 50  # points per difficulty step
+LEVEL_SIZE = 30  # points per difficulty step
 
 # Player
 player_width = 50
@@ -137,7 +137,7 @@ while running:
         difficulty_level = score // LEVEL_SIZE
         current_player_speed = player_speed + min(0.3 * difficulty_level, 4)
         current_bullet_speed = bullet_speed + min(2 * difficulty_level, 15)
-        fire_interval = max(6, 20 - difficulty_level)
+        fire_interval = max(6, 24 - difficulty_level)
         current_enemy_speed = enemy_speed + min(0.5 * difficulty_level, 6)
         current_spawn_rate = max(10, enemy_spawn_rate - difficulty_level * 3)
         current_enemy_bullet_speed = 6 + min(0.5 * difficulty_level, 6)
