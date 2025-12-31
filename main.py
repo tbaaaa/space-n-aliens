@@ -27,7 +27,7 @@ player_speed = 8
 # Bullet
 bullet_width = 5
 bullet_height = 10
-bullet_speed = 15
+bullet_speed = 18
 bullets = []
 
 # Enemy
