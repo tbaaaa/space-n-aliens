@@ -140,45 +140,52 @@ while running:
         # Draw player
         pygame.draw.rect(screen, GREEN, (player_x, player_y, player_width, player_height))
 
-        # Draw aiming line
-        mouse_x, mouse_y = pygame.mouse.get_pos()
-        player_center_x = player_x + player_width // 2
-        player_center_y = player_y + player_height // 2
-        pygame.draw.line(screen, RED, (player_center_x, player_center_y), (mouse_x, mouse_y), 2)
+        # Draw aiming line (only when playing)
+        if game_state == 'playing':
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            player_center_x = player_x + player_width // 2
+            player_center_y = player_y + player_height // 2
+            pygame.draw.line(screen, RED, (player_center_x, player_center_y), (mouse_x, mouse_y), 2)
 
-        # Update bullets
+        # Draw bullets
         for bullet in bullets[:]:
-            bullet[0] += bullet[2]
-            bullet[1] += bullet[3]
-            if bullet[0] < -bullet_width or bullet[0] > SCREEN_WIDTH or bullet[1] < -bullet_height or bullet[1] > SCREEN_HEIGHT:
-                bullets.remove(bullet)
-            else:
-                pygame.draw.line(screen, WHITE, (bullet[0], bullet[1]), (bullet[0] + bullet[2] * 3, bullet[1] + bullet[3] * 3), 3)
+            pygame.draw.line(screen, WHITE, (bullet[0], bullet[1]), (bullet[0] + bullet[2] * 3, bullet[1] + bullet[3] * 3), 3)
 
-        # Spawn enemies
-        if frame_count % enemy_spawn_rate == 0:
-            enemy_x = random.randint(0, SCREEN_WIDTH - enemy_width)
-            enemies.append([enemy_x, 0])
-
-        # Update enemies
+        # Draw enemies
         for enemy in enemies[:]:
-            enemy[1] += enemy_speed
-            if enemy[1] > SCREEN_HEIGHT:
-                game_state = 'game_over'
-            else:
-                pygame.draw.rect(screen, RED, (enemy[0], enemy[1], enemy_width, enemy_height))
+            pygame.draw.rect(screen, RED, (enemy[0], enemy[1], enemy_width, enemy_height))
 
-        # Check collisions
-        for bullet in bullets[:]:
-            for enemy in enemies[:]:
-                if (bullet[0] < enemy[0] + enemy_width and
-                    bullet[0] + bullet_width > enemy[0] and
-                    bullet[1] < enemy[1] + enemy_height and
-                    bullet[1] + bullet_height > enemy[1]):
+        # Update game state (only when playing)
+        if game_state == 'playing':
+            # Update bullets
+            for bullet in bullets[:]:
+                bullet[0] += bullet[2]
+                bullet[1] += bullet[3]
+                if bullet[0] < -bullet_width or bullet[0] > SCREEN_WIDTH or bullet[1] < -bullet_height or bullet[1] > SCREEN_HEIGHT:
                     bullets.remove(bullet)
-                    enemies.remove(enemy)
-                    score += 1
-                    break
+
+            # Spawn enemies
+            if frame_count % enemy_spawn_rate == 0:
+                enemy_x = random.randint(0, SCREEN_WIDTH - enemy_width)
+                enemies.append([enemy_x, 0])
+
+            # Update enemies
+            for enemy in enemies[:]:
+                enemy[1] += enemy_speed
+                if enemy[1] > SCREEN_HEIGHT:
+                    game_state = 'game_over'
+
+            # Check collisions
+            for bullet in bullets[:]:
+                for enemy in enemies[:]:
+                    if (bullet[0] < enemy[0] + enemy_width and
+                        bullet[0] + bullet_width > enemy[0] and
+                        bullet[1] < enemy[1] + enemy_height and
+                        bullet[1] + bullet_height > enemy[1]):
+                        bullets.remove(bullet)
+                        enemies.remove(enemy)
+                        score += 1
+                        break
 
         # Draw score
         score_text = font.render(f"Score: {score}", True, WHITE)
