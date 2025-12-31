@@ -273,7 +273,15 @@ while running:
                         enemy['shoot_cooldown'] = random.randint(base_cooldown, base_cooldown + 40)
 
                 if enemy['y'] > SCREEN_HEIGHT:
-                    game_state = 'game_over'
+                    enemies.remove(enemy)
+                    if not invincible:
+                        player_hp -= 1
+                        if player_hp <= 0:
+                            game_state = 'game_over'
+                        else:
+                            invincible = True
+                            invincible_timer = invincible_duration
+                    continue
 
             # Update enemy bullets
             for eb in enemy_bullets[:]:
