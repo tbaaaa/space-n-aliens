@@ -207,7 +207,17 @@ while running:
 
             # Spawn enemies
             if frame_count % current_spawn_rate == 0:
-                enemy_x = random.randint(0, SCREEN_WIDTH - enemy_width)
+                # Keep sine/zigzag spawns within horizontal bounds
+                max_amplitude = max(20, (SCREEN_WIDTH - enemy_width) // 2)
+                chosen_amplitude = min(random.randint(40, 120), max_amplitude)
+                spawn_x_min = chosen_amplitude
+                spawn_x_max = SCREEN_WIDTH - enemy_width - chosen_amplitude
+                if spawn_x_max < spawn_x_min:
+                    spawn_x_min = 0
+                    spawn_x_max = SCREEN_WIDTH - enemy_width
+                    chosen_amplitude = max_amplitude
+
+                enemy_x = random.randint(spawn_x_min, spawn_x_max)
                 enemy_type = 'straight'
                 if difficulty_level >= 4:
                     enemy_type = random.choice(['shooter', 'sine', 'zigzag', 'straight'])
@@ -221,7 +231,7 @@ while running:
                     'base_x': enemy_x,
                     'type': enemy_type,
                     'vx': random.choice([-1, 1]) * (1.5 + 0.2 * difficulty_level),
-                    'amplitude': random.randint(40, 120),
+                    'amplitude': chosen_amplitude,
                     'spawn_frame': frame_count,
                     'shoot_cooldown': 0
                 }
@@ -235,6 +245,7 @@ while running:
                 if enemy['type'] == 'sine':
                     offset = enemy['amplitude'] * math.sin((frame_count - enemy['spawn_frame']) / 25)
                     enemy['x'] = enemy['base_x'] + offset
+                    enemy['x'] = max(0, min(enemy['x'], SCREEN_WIDTH - enemy_width))
                 elif enemy['type'] in ('zigzag', 'shooter'):
                     enemy['x'] += enemy['vx']
                     if enemy['x'] < 0 or enemy['x'] > SCREEN_WIDTH - enemy_width:
