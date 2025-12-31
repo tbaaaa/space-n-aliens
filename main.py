@@ -34,7 +34,7 @@ enemy_width = 50
 enemy_height = 50
 enemy_speed = 3
 enemies = []
-enemy_spawn_rate = 30  # frames
+enemy_spawn_rate = 45  # frames
 
 # Score
 score = 0
@@ -90,7 +90,7 @@ while running:
             player_x -= player_speed
         if keys[pygame.K_d] and player_x < SCREEN_WIDTH - player_width:
             player_x += player_speed
-        if keys[pygame.K_SPACE] and frame_count % 10 == 0:  # Limit shooting rate
+        if keys[pygame.K_SPACE] and frame_count % 5 == 0:  # Limit shooting rate
             bullets.append([player_x + player_width // 2 - bullet_width // 2, player_y])
 
         # Draw player
