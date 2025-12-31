@@ -128,7 +128,7 @@ while running:
             if bullet[0] < -bullet_width or bullet[0] > SCREEN_WIDTH or bullet[1] < -bullet_height or bullet[1] > SCREEN_HEIGHT:
                 bullets.remove(bullet)
             else:
-                pygame.draw.rect(screen, WHITE, (bullet[0], bullet[1], bullet_width, bullet_height))
+                pygame.draw.line(screen, WHITE, (bullet[0], bullet[1]), (bullet[0] + bullet[2] * 3, bullet[1] + bullet[3] * 3), 3)
 
         # Spawn enemies
         if frame_count % enemy_spawn_rate == 0:
