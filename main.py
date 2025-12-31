@@ -17,6 +17,7 @@ WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
+PURPLE = (128, 0, 128)
 
 # Player
 player_width = 50
@@ -24,6 +25,10 @@ player_height = 50
 player_x = SCREEN_WIDTH // 2 - player_width // 2
 player_y = SCREEN_HEIGHT - player_height - 10
 player_speed = 8
+player_hp = 3
+invincible = False
+invincible_timer = 0
+invincible_duration = 120  # frames (2 seconds at 60 FPS)
 
 # Bullet
 bullet_width = 5
@@ -50,12 +55,15 @@ clock = pygame.time.Clock()
 FPS = 60
 
 def reset_game():
-    global player_x, bullets, enemies, score, frame_count
+    global player_x, bullets, enemies, score, frame_count, player_hp, invincible, invincible_timer
     player_x = SCREEN_WIDTH // 2 - player_width // 2
     bullets = []
     enemies = []
     score = 0
     frame_count = 0
+    player_hp = 3
+    invincible = False
+    invincible_timer = 0
 
 # Game loop
 running = True
@@ -144,8 +152,9 @@ while running:
                     bullet_vy = dy * bullet_speed
                     bullets.append([player_center_x - bullet_width // 2, player_center_y - bullet_height // 2, bullet_vx, bullet_vy])
 
-        # Draw player
-        pygame.draw.rect(screen, GREEN, (player_x, player_y, player_width, player_height))
+        # Draw player (with flashing effect during invincibility)
+        if not invincible or (invincible_timer // 10) % 2 == 0:  # Flash every 10 frames
+            pygame.draw.rect(screen, GREEN, (player_x, player_y, player_width, player_height))
 
         # Draw aiming line (only when playing)
         if game_state == 'playing':
@@ -160,7 +169,7 @@ while running:
 
         # Draw enemies
         for enemy in enemies[:]:
-            pygame.draw.rect(screen, RED, (enemy[0], enemy[1], enemy_width, enemy_height))
+            pygame.draw.rect(screen, PURPLE, (enemy[0], enemy[1], enemy_width, enemy_height))
 
         # Update game state (only when playing)
         if game_state == 'playing':
@@ -182,7 +191,7 @@ while running:
                 if enemy[1] > SCREEN_HEIGHT:
                     game_state = 'game_over'
 
-            # Check collisions
+            # Check bullet-enemy collisions
             for bullet in bullets[:]:
                 for enemy in enemies[:]:
                     if (bullet[0] < enemy[0] + enemy_width and
@@ -194,9 +203,33 @@ while running:
                         score += 1
                         break
 
-        # Draw score
+            # Check player-enemy collisions
+            if not invincible:
+                for enemy in enemies[:]:
+                    if (player_x < enemy[0] + enemy_width and
+                        player_x + player_width > enemy[0] and
+                        player_y < enemy[1] + enemy_height and
+                        player_y + player_height > enemy[1]):
+                        enemies.remove(enemy)
+                        player_hp -= 1
+                        if player_hp <= 0:
+                            game_state = 'game_over'
+                        else:
+                            invincible = True
+                            invincible_timer = invincible_duration
+                        break
+
+            # Update invincibility timer
+            if invincible:
+                invincible_timer -= 1
+                if invincible_timer <= 0:
+                    invincible = False
+
+        # Draw score and HP
         score_text = font.render(f"Score: {score}", True, WHITE)
         screen.blit(score_text, (10, 10))
+        hp_text = font.render(f"HP: {player_hp}", True, WHITE)
+        screen.blit(hp_text, (10, 50))
 
         # Check for pause (only when playing)
         if game_state == 'playing' and keys[pygame.K_ESCAPE]:
