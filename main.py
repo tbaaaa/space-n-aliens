@@ -27,7 +27,7 @@ player_speed = 8
 # Bullet
 bullet_width = 5
 bullet_height = 10
-bullet_speed = 12
+bullet_speed = 15
 bullets = []
 
 # Enemy
@@ -98,7 +98,7 @@ while running:
         if keys[pygame.K_s] and player_y < SCREEN_HEIGHT - player_height:
             player_y += player_speed
         mouse_pressed = pygame.mouse.get_pressed()
-        if mouse_pressed[0] and frame_count % 10 == 0:  # LMB
+        if mouse_pressed[0] and frame_count % 15 == 0:  # LMB
             mouse_x, mouse_y = pygame.mouse.get_pos()
             player_center_x = player_x + player_width // 2
             player_center_y = player_y + player_height // 2
