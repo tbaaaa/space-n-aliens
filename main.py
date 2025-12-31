@@ -7,7 +7,7 @@ pygame.init()
 # Screen dimensions
 SCREEN_WIDTH = 1000
 SCREEN_HEIGHT = 800
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
 pygame.display.set_caption("Space N Aliens")
 
 # Colors
@@ -69,6 +69,11 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == pygame.VIDEORESIZE:
+            global SCREEN_WIDTH, SCREEN_HEIGHT
+            SCREEN_WIDTH = event.w
+            SCREEN_HEIGHT = event.h
+            screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
         elif event.type == pygame.MOUSEBUTTONDOWN and game_state == 'game_over':
             if button_rect.collidepoint(event.pos):
                 reset_game()

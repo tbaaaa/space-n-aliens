@@ -15,6 +15,8 @@ This is a game that will be made as a 2d spaceship alien shooter, made entirley 
 ### Running the Game
 Run the game with: `python main.py`
 
+The game window is resizable - you can maximize, restore, or resize it as needed.
+
 ### Controls
 - A/D Keys: Move the spaceship left/right
 - W/S Keys: Move the spaceship up/down
