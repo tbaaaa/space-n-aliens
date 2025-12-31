@@ -1,5 +1,6 @@
 import pygame
 import random
+import math
 
 # Initialize Pygame
 pygame.init()
@@ -78,10 +79,11 @@ while running:
     if game_state == 'title':
         # Draw title
         title_text = font.render("Space N Aliens", True, WHITE)
-        start_text = font.render("Press Space to Start", True, WHITE)
+        start_text = font.render("Click to Start", True, WHITE)
         screen.blit(title_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50))
-        screen.blit(start_text, (SCREEN_WIDTH // 2 - 120, SCREEN_HEIGHT // 2))
-        if keys[pygame.K_SPACE]:
+        screen.blit(start_text, (SCREEN_WIDTH // 2 - 80, SCREEN_HEIGHT // 2))
+        mouse_pressed = pygame.mouse.get_pressed()
+        if mouse_pressed[0]:
             reset_game()
             game_state = 'playing'
 
@@ -95,16 +97,29 @@ while running:
             player_y -= player_speed
         if keys[pygame.K_s] and player_y < SCREEN_HEIGHT - player_height:
             player_y += player_speed
-        if keys[pygame.K_SPACE] and frame_count % 5 == 0:  # Limit shooting rate
-            bullets.append([player_x + player_width // 2 - bullet_width // 2, player_y])
+        mouse_pressed = pygame.mouse.get_pressed()
+        if mouse_pressed[0] and frame_count % 5 == 0:  # LMB
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            player_center_x = player_x + player_width // 2
+            player_center_y = player_y + player_height // 2
+            dx = mouse_x - player_center_x
+            dy = mouse_y - player_center_y
+            distance = math.sqrt(dx**2 + dy**2)
+            if distance > 0:
+                dx /= distance
+                dy /= distance
+                bullet_vx = dx * bullet_speed
+                bullet_vy = dy * bullet_speed
+                bullets.append([player_center_x - bullet_width // 2, player_center_y - bullet_height // 2, bullet_vx, bullet_vy])
 
         # Draw player
         pygame.draw.rect(screen, GREEN, (player_x, player_y, player_width, player_height))
 
         # Update bullets
         for bullet in bullets[:]:
-            bullet[1] -= bullet_speed
-            if bullet[1] < 0:
+            bullet[0] += bullet[2]
+            bullet[1] += bullet[3]
+            if bullet[0] < -bullet_width or bullet[0] > SCREEN_WIDTH or bullet[1] < -bullet_height or bullet[1] > SCREEN_HEIGHT:
                 bullets.remove(bullet)
             else:
                 pygame.draw.rect(screen, WHITE, (bullet[0], bullet[1], bullet_width, bullet_height))
