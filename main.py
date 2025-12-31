@@ -28,7 +28,7 @@ player_width = 50
 player_height = 50
 player_x = SCREEN_WIDTH // 2 - player_width // 2
 player_y = SCREEN_HEIGHT - player_height - 10
-player_speed = 8
+player_speed = 6
 player_hp = 3
 invincible = False
 invincible_timer = 0
@@ -37,15 +37,15 @@ invincible_duration = 120  # frames (2 seconds at 60 FPS)
 # Bullet
 bullet_width = 5
 bullet_height = 10
-bullet_speed = 35
+bullet_speed = 25
 bullets = []
 
 # Enemy
 enemy_width = 50
 enemy_height = 50
-enemy_speed = 3
+enemy_speed = 2
 enemies = []
-enemy_spawn_rate = 45  # frames
+enemy_spawn_rate = 60  # frames
 enemy_bullets = []
 
 # Score
@@ -137,7 +137,7 @@ while running:
         difficulty_level = score // LEVEL_SIZE
         current_player_speed = player_speed + min(0.3 * difficulty_level, 4)
         current_bullet_speed = bullet_speed + min(2 * difficulty_level, 15)
-        fire_interval = max(6, 15 - difficulty_level)
+        fire_interval = max(6, 20 - difficulty_level)
         current_enemy_speed = enemy_speed + min(0.5 * difficulty_level, 6)
         current_spawn_rate = max(10, enemy_spawn_rate - difficulty_level * 3)
         current_enemy_bullet_speed = 6 + min(0.5 * difficulty_level, 6)
