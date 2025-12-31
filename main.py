@@ -135,9 +135,9 @@ while running:
     elif game_state == 'playing' or game_state == 'paused':
         # Dynamic difficulty based on score
         difficulty_level = score // LEVEL_SIZE
-        current_player_speed = player_speed + min(0.3 * difficulty_level, 4)
-        current_bullet_speed = bullet_speed + min(2 * difficulty_level, 15)
-        fire_interval = max(6, 24 - difficulty_level)
+        current_player_speed = player_speed + min(0.5 * difficulty_level, 5)
+        current_bullet_speed = bullet_speed + min(3 * difficulty_level, 20)
+        fire_interval = max(6, 24 - difficulty_level * 2)
         current_enemy_speed = enemy_speed + min(0.5 * difficulty_level, 6)
         current_spawn_rate = max(10, enemy_spawn_rate - difficulty_level * 3)
         current_enemy_bullet_speed = 6 + min(0.5 * difficulty_level, 6)
