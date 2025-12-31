@@ -20,6 +20,9 @@ BLUE = (0, 0, 255)
 PURPLE = (128, 0, 128)
 YELLOW = (255, 255, 0)
 
+# Difficulty tuning
+LEVEL_SIZE = 50  # points per difficulty step
+
 # Player
 player_width = 50
 player_height = 50
@@ -43,6 +46,7 @@ enemy_height = 50
 enemy_speed = 3
 enemies = []
 enemy_spawn_rate = 45  # frames
+enemy_bullets = []
 
 # Score
 score = 0
@@ -56,10 +60,11 @@ clock = pygame.time.Clock()
 FPS = 60
 
 def reset_game():
-    global player_x, bullets, enemies, score, frame_count, player_hp, invincible, invincible_timer
+    global player_x, bullets, enemies, enemy_bullets, score, frame_count, player_hp, invincible, invincible_timer
     player_x = SCREEN_WIDTH // 2 - player_width // 2
     bullets = []
     enemies = []
+    enemy_bullets = []
     score = 0
     frame_count = 0
     player_hp = 3
@@ -128,18 +133,26 @@ while running:
         screen.blit(exit_text, (SCREEN_WIDTH // 2 - 20, SCREEN_HEIGHT // 2 + 40))
 
     elif game_state == 'playing' or game_state == 'paused':
+        # Dynamic difficulty based on score
+        difficulty_level = score // LEVEL_SIZE
+        current_player_speed = player_speed + min(0.3 * difficulty_level, 4)
+        current_bullet_speed = bullet_speed + min(2 * difficulty_level, 15)
+        fire_interval = max(6, 15 - difficulty_level)
+        current_enemy_speed = enemy_speed + min(0.5 * difficulty_level, 6)
+        current_spawn_rate = max(10, enemy_spawn_rate - difficulty_level * 3)
+        current_enemy_bullet_speed = 6 + min(0.5 * difficulty_level, 6)
         # Player movement (only when not paused)
         if game_state == 'playing':
             if keys[pygame.K_a] and player_x > 0:
-                player_x -= player_speed
+                player_x -= current_player_speed
             if keys[pygame.K_d] and player_x < SCREEN_WIDTH - player_width:
-                player_x += player_speed
+                player_x += current_player_speed
             if keys[pygame.K_w] and player_y > 0:
-                player_y -= player_speed
+                player_y -= current_player_speed
             if keys[pygame.K_s] and player_y < SCREEN_HEIGHT - player_height:
-                player_y += player_speed
+                player_y += current_player_speed
             mouse_pressed = pygame.mouse.get_pressed()
-            if mouse_pressed[0] and frame_count % 15 == 0:  # LMB
+            if mouse_pressed[0] and frame_count % fire_interval == 0:  # LMB
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 player_center_x = player_x + player_width // 2
                 player_center_y = player_y + player_height // 2
@@ -149,8 +162,8 @@ while running:
                 if distance > 0:
                     dx /= distance
                     dy /= distance
-                    bullet_vx = dx * bullet_speed
-                    bullet_vy = dy * bullet_speed
+                    bullet_vx = dx * current_bullet_speed
+                    bullet_vy = dy * current_bullet_speed
                     bullets.append([player_center_x - bullet_width // 2, player_center_y - bullet_height // 2, bullet_vx, bullet_vy])
 
         # Draw player (with flashing effect during invincibility)
@@ -177,7 +190,11 @@ while running:
 
         # Draw enemies
         for enemy in enemies[:]:
-            pygame.draw.rect(screen, PURPLE, (enemy[0], enemy[1], enemy_width, enemy_height))
+            pygame.draw.rect(screen, PURPLE, (enemy['x'], enemy['y'], enemy_width, enemy_height))
+
+        # Draw enemy bullets
+        for eb in enemy_bullets[:]:
+            pygame.draw.circle(screen, RED, (int(eb[0]), int(eb[1])), 5)
 
         # Update game state (only when playing)
         if game_state == 'playing':
@@ -189,23 +206,78 @@ while running:
                     bullets.remove(bullet)
 
             # Spawn enemies
-            if frame_count % enemy_spawn_rate == 0:
+            if frame_count % current_spawn_rate == 0:
                 enemy_x = random.randint(0, SCREEN_WIDTH - enemy_width)
-                enemies.append([enemy_x, 0])
+                enemy_type = 'straight'
+                if difficulty_level >= 4:
+                    enemy_type = random.choice(['shooter', 'sine', 'zigzag', 'straight'])
+                elif difficulty_level >= 2:
+                    enemy_type = random.choice(['sine', 'zigzag', 'straight'])
+                elif difficulty_level >= 1:
+                    enemy_type = random.choice(['straight', 'sine'])
+                new_enemy = {
+                    'x': enemy_x,
+                    'y': 0,
+                    'base_x': enemy_x,
+                    'type': enemy_type,
+                    'vx': random.choice([-1, 1]) * (1.5 + 0.2 * difficulty_level),
+                    'amplitude': random.randint(40, 120),
+                    'spawn_frame': frame_count,
+                    'shoot_cooldown': 0
+                }
+                if enemy_type == 'shooter':
+                    base_cooldown = max(45, 90 - difficulty_level * 8)
+                    new_enemy['shoot_cooldown'] = random.randint(base_cooldown, base_cooldown + 40)
+                enemies.append(new_enemy)
 
             # Update enemies
             for enemy in enemies[:]:
-                enemy[1] += enemy_speed
-                if enemy[1] > SCREEN_HEIGHT:
+                if enemy['type'] == 'sine':
+                    offset = enemy['amplitude'] * math.sin((frame_count - enemy['spawn_frame']) / 25)
+                    enemy['x'] = enemy['base_x'] + offset
+                elif enemy['type'] in ('zigzag', 'shooter'):
+                    enemy['x'] += enemy['vx']
+                    if enemy['x'] < 0 or enemy['x'] > SCREEN_WIDTH - enemy_width:
+                        enemy['vx'] *= -1
+                        enemy['x'] = max(0, min(enemy['x'], SCREEN_WIDTH - enemy_width))
+
+                enemy['y'] += current_enemy_speed
+
+                if enemy['type'] == 'shooter':
+                    enemy['shoot_cooldown'] -= 1
+                    if enemy['shoot_cooldown'] <= 0:
+                        player_center_x = player_x + player_width // 2
+                        player_center_y = player_y + player_height // 2
+                        enemy_center_x = enemy['x'] + enemy_width // 2
+                        enemy_center_y = enemy['y'] + enemy_height // 2
+                        dx = player_center_x - enemy_center_x
+                        dy = player_center_y - enemy_center_y
+                        dist = math.hypot(dx, dy)
+                        if dist == 0:
+                            dist = 1
+                        vx = (dx / dist) * current_enemy_bullet_speed
+                        vy = (dy / dist) * current_enemy_bullet_speed
+                        enemy_bullets.append([enemy_center_x, enemy_center_y, vx, vy])
+                        base_cooldown = max(45, 90 - difficulty_level * 8)
+                        enemy['shoot_cooldown'] = random.randint(base_cooldown, base_cooldown + 40)
+
+                if enemy['y'] > SCREEN_HEIGHT:
                     game_state = 'game_over'
+
+            # Update enemy bullets
+            for eb in enemy_bullets[:]:
+                eb[0] += eb[2]
+                eb[1] += eb[3]
+                if eb[0] < -10 or eb[0] > SCREEN_WIDTH + 10 or eb[1] < -10 or eb[1] > SCREEN_HEIGHT + 10:
+                    enemy_bullets.remove(eb)
 
             # Check bullet-enemy collisions
             for bullet in bullets[:]:
                 for enemy in enemies[:]:
-                    if (bullet[0] < enemy[0] + enemy_width and
-                        bullet[0] + bullet_width > enemy[0] and
-                        bullet[1] < enemy[1] + enemy_height and
-                        bullet[1] + bullet_height > enemy[1]):
+                    if (bullet[0] < enemy['x'] + enemy_width and
+                        bullet[0] + bullet_width > enemy['x'] and
+                        bullet[1] < enemy['y'] + enemy_height and
+                        bullet[1] + bullet_height > enemy['y']):
                         bullets.remove(bullet)
                         enemies.remove(enemy)
                         score += 1
@@ -214,11 +286,27 @@ while running:
             # Check player-enemy collisions
             if not invincible:
                 for enemy in enemies[:]:
-                    if (player_x < enemy[0] + enemy_width and
-                        player_x + player_width > enemy[0] and
-                        player_y < enemy[1] + enemy_height and
-                        player_y + player_height > enemy[1]):
+                    if (player_x < enemy['x'] + enemy_width and
+                        player_x + player_width > enemy['x'] and
+                        player_y < enemy['y'] + enemy_height and
+                        player_y + player_height > enemy['y']):
                         enemies.remove(enemy)
+                        player_hp -= 1
+                        if player_hp <= 0:
+                            game_state = 'game_over'
+                        else:
+                            invincible = True
+                            invincible_timer = invincible_duration
+                        break
+
+            # Check player hit by enemy bullets
+            if not invincible:
+                for eb in enemy_bullets[:]:
+                    if (player_x < eb[0] + 6 and
+                        player_x + player_width > eb[0] - 6 and
+                        player_y < eb[1] + 6 and
+                        player_y + player_height > eb[1] - 6):
+                        enemy_bullets.remove(eb)
                         player_hp -= 1
                         if player_hp <= 0:
                             game_state = 'game_over'
