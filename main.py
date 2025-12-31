@@ -70,7 +70,6 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.VIDEORESIZE:
-            global SCREEN_WIDTH, SCREEN_HEIGHT
             SCREEN_WIDTH = event.w
             SCREEN_HEIGHT = event.h
             screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
