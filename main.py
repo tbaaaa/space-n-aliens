@@ -27,7 +27,7 @@ player_speed = 8
 # Bullet
 bullet_width = 5
 bullet_height = 10
-bullet_speed = 18
+bullet_speed = 20
 bullets = []
 
 # Enemy
@@ -43,10 +43,6 @@ font = pygame.font.Font(None, 36)
 
 # Game state
 game_state = 'title'
-
-# Buttons
-start_button = pygame.Rect(SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2 - 20, 100, 40)
-exit_button = pygame.Rect(SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2 + 30, 100, 40)
 
 # Clock
 clock = pygame.time.Clock()
@@ -76,6 +72,8 @@ while running:
             SCREEN_HEIGHT = event.h
             screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
         elif event.type == pygame.MOUSEBUTTONDOWN and game_state == 'title':
+            start_button = pygame.Rect(SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2 - 20, 100, 40)
+            exit_button = pygame.Rect(SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2 + 30, 100, 40)
             if start_button.collidepoint(event.pos):
                 reset_game()
                 game_state = 'playing'
@@ -87,6 +85,9 @@ while running:
                 game_state = 'playing'
 
     if game_state == 'title':
+        # Define buttons
+        start_button = pygame.Rect(SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2 - 20, 100, 40)
+        exit_button = pygame.Rect(SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2 + 30, 100, 40)
         # Draw title
         title_text = font.render("Space N Aliens", True, WHITE)
         screen.blit(title_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 80))
