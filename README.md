@@ -17,7 +17,8 @@ Run the game with: `python main.py`
 
 ### Controls
 - A/D Keys: Move the spaceship left/right
-- Spacebar: Shoot bullets
+- Spacebar: Shoot bullets (or start game from title screen)
+- Click "Retry" button on game over screen to play again
 - Shoot the red aliens before they reach the bottom!
 
 ### Game Objective
