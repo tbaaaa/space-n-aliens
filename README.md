@@ -21,7 +21,7 @@ The game window is resizable - you can maximize, restore, or resize it as needed
 - A/D Keys: Move the spaceship left/right
 - W/S Keys: Move the spaceship up/down
 - Left Mouse Button: Aim and shoot bullets (aim with mouse cursor)
-- Click to start the game from the title screen
+- Click "Start" to begin the game, "Exit" to quit from the title screen
 - Click "Retry" button on game over screen to play again
 - Shoot the red aliens before they reach the bottom!
 

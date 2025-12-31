@@ -44,6 +44,10 @@ font = pygame.font.Font(None, 36)
 # Game state
 game_state = 'title'
 
+# Buttons
+start_button = pygame.Rect(SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2 - 20, 100, 40)
+exit_button = pygame.Rect(SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2 + 30, 100, 40)
+
 # Clock
 clock = pygame.time.Clock()
 FPS = 60
@@ -71,6 +75,12 @@ while running:
             SCREEN_WIDTH = event.w
             SCREEN_HEIGHT = event.h
             screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
+        elif event.type == pygame.MOUSEBUTTONDOWN and game_state == 'title':
+            if start_button.collidepoint(event.pos):
+                reset_game()
+                game_state = 'playing'
+            elif exit_button.collidepoint(event.pos):
+                running = False
         elif event.type == pygame.MOUSEBUTTONDOWN and game_state == 'game_over':
             if button_rect.collidepoint(event.pos):
                 reset_game()
@@ -79,13 +89,15 @@ while running:
     if game_state == 'title':
         # Draw title
         title_text = font.render("Space N Aliens", True, WHITE)
-        start_text = font.render("Click to Start", True, WHITE)
-        screen.blit(title_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50))
-        screen.blit(start_text, (SCREEN_WIDTH // 2 - 80, SCREEN_HEIGHT // 2))
-        mouse_pressed = pygame.mouse.get_pressed()
-        if mouse_pressed[0]:
-            reset_game()
-            game_state = 'playing'
+        screen.blit(title_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 80))
+        # Draw start button
+        pygame.draw.rect(screen, GREEN, start_button)
+        start_text = font.render("Start", True, BLACK)
+        screen.blit(start_text, (SCREEN_WIDTH // 2 - 25, SCREEN_HEIGHT // 2 - 10))
+        # Draw exit button
+        pygame.draw.rect(screen, RED, exit_button)
+        exit_text = font.render("Exit", True, BLACK)
+        screen.blit(exit_text, (SCREEN_WIDTH // 2 - 20, SCREEN_HEIGHT // 2 + 40))
 
     elif game_state == 'playing':
         # Player movement
