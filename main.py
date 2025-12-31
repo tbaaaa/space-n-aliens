@@ -21,7 +21,7 @@ player_width = 50
 player_height = 50
 player_x = SCREEN_WIDTH // 2 - player_width // 2
 player_y = SCREEN_HEIGHT - player_height - 10
-player_speed = 5
+player_speed = 8
 
 # Bullet
 bullet_width = 5
