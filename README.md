@@ -2,8 +2,6 @@
 
 Quick! The aliens invaded your galaxy. Fight back and take back your home! It won't be easy :)
 
-A 2D spaceship alien shooter made entirely in Python using Pygame.
-
 ## Guide
 
 ### Prerequisites
@@ -28,8 +26,8 @@ The game window is resizable - you can maximize, restore, or resize it as needed
 - **Mash A/D**: Break free if a grabber latches onto you
 
 ### Game Features
-- **HP System**: 3 HP with color feedback (green/yellow/red) and 2s invincibility frames after hits
 - **Resizable Window**: Play in any window size
+- **HP System**: 3 HP with color feedback (green/yellow/red) and 2s invincibility frames after hits
 - **Enemy Types**: Straight, sine, zigzag, and shooter variants unlocked by score milestones
 - **Boss Progression**: Spawns at scores 100, 200, and 300+
   - **Boss 1 (100)**: Rectangular, spread + aimed shots, periodic vulnerability windows
@@ -45,7 +43,7 @@ The game window is resizable - you can maximize, restore, or resize it as needed
 
 ### Game Objective
 - Survive as long as possible by shooting purple aliens
-- Avoid letting aliens reach the bottom of the screen (instant game over)
+- Avoid letting aliens reach the bottom of the screen (or lose HP)
 - Avoid colliding with aliens (lose 1 HP per collision)
 - Score points by shooting aliens
-- Game ends when your HP reaches 0 or an alien reaches the bottom
+- Game ends when your HP reaches 0
