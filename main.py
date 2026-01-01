@@ -576,7 +576,7 @@ while running:
                         speed = 5 + boss['stage'] * 0.6
                         vx = (dx / dist) * speed
                         vy = (dy / dist) * speed
-                        multiplying_bullets.append({'x': boss_x, 'y': boss_y, 'vx': vx, 'vy': vy, 'split_timer': 55, 'bounces': 0, 'split_count': 0})
+                        multiplying_bullets.append({'x': boss_x, 'y': boss_y, 'vx': vx, 'vy': vy, 'bounces': 0, 'split_count': 0})
 
                     # 3: Exploding delayed shots
                     elif boss['attack_pattern'] == 3 and boss['attack_timer'] % 50 == 0:
@@ -926,18 +926,16 @@ while running:
                     bounced = True
                 if bounced:
                     b['bounces'] += 1
-                b['split_timer'] -= 1
-                if b['split_timer'] <= 0 and b['split_count'] < 2:
-                    b['split_count'] += 1
-                    b['split_timer'] = 50 - 5 * b['split_count']
-                    # Create two off-angle bullets
-                    for angle_delta in [-25, 25]:
-                        angle = math.radians(angle_delta)
-                        cos_a = math.cos(angle)
-                        sin_a = math.sin(angle)
-                        new_vx = b['vx'] * cos_a - b['vy'] * sin_a
-                        new_vy = b['vx'] * sin_a + b['vy'] * cos_a
-                        multiplying_bullets.append({'x': b['x'], 'y': b['y'], 'vx': new_vx, 'vy': new_vy, 'split_timer': b['split_timer'], 'bounces': b['bounces'], 'split_count': b['split_count']})
+                    if b['split_count'] < 2:
+                        b['split_count'] += 1
+                        # Create two off-angle bullets
+                        for angle_delta in [-25, 25]:
+                            angle = math.radians(angle_delta)
+                            cos_a = math.cos(angle)
+                            sin_a = math.sin(angle)
+                            new_vx = b['vx'] * cos_a - b['vy'] * sin_a
+                            new_vy = b['vx'] * sin_a + b['vy'] * cos_a
+                            multiplying_bullets.append({'x': b['x'], 'y': b['y'], 'vx': new_vx, 'vy': new_vy, 'bounces': b['bounces'], 'split_count': b['split_count']})
                 if b['bounces'] > 1:
                     multiplying_bullets.remove(b)
 
