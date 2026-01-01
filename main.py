@@ -18,6 +18,7 @@ RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 PURPLE = (128, 0, 128)
+DARK_PURPLE = (80, 0, 80)
 YELLOW = (255, 255, 0)
 
 # Difficulty tuning
@@ -190,7 +191,12 @@ while running:
 
         # Draw enemies
         for enemy in enemies[:]:
-            pygame.draw.rect(screen, PURPLE, (enemy['x'], enemy['y'], enemy_width, enemy_height))
+            enemy_color = PURPLE
+            if enemy['type'] == 'shooter' and enemy.get('warning_timer', 0) > 0:
+                # Flash dark purple every 5 frames
+                if (enemy['warning_timer'] // 5) % 2 == 0:
+                    enemy_color = DARK_PURPLE
+            pygame.draw.rect(screen, enemy_color, (enemy['x'], enemy['y'], enemy_width, enemy_height))
 
         # Draw enemy bullets
         for eb in enemy_bullets[:]:
@@ -240,7 +246,8 @@ while running:
                     'vx': random.choice([-1, 1]) * (1.5 + 0.2 * difficulty_level),
                     'amplitude': chosen_amplitude,
                     'spawn_frame': frame_count,
-                    'shoot_cooldown': 0
+                    'shoot_cooldown': 0,
+                    'warning_timer': 0
                 }
                 if enemy_type == 'shooter':
                     base_cooldown = max(45, 90 - difficulty_level * 8)
@@ -262,22 +269,29 @@ while running:
                 enemy['y'] += current_enemy_speed
 
                 if enemy['type'] == 'shooter':
-                    enemy['shoot_cooldown'] -= 1
-                    if enemy['shoot_cooldown'] <= 0:
-                        player_center_x = player_x + player_width // 2
-                        player_center_y = player_y + player_height // 2
-                        enemy_center_x = enemy['x'] + enemy_width // 2
-                        enemy_center_y = enemy['y'] + enemy_height // 2
-                        dx = player_center_x - enemy_center_x
-                        dy = player_center_y - enemy_center_y
-                        dist = math.hypot(dx, dy)
-                        if dist == 0:
-                            dist = 1
-                        vx = (dx / dist) * current_enemy_bullet_speed
-                        vy = (dy / dist) * current_enemy_bullet_speed
-                        enemy_bullets.append([enemy_center_x, enemy_center_y, vx, vy])
-                        base_cooldown = max(45, 90 - difficulty_level * 8)
-                        enemy['shoot_cooldown'] = random.randint(base_cooldown, base_cooldown + 40)
+                    if enemy.get('warning_timer', 0) > 0:
+                        enemy['warning_timer'] -= 1
+                    else:
+                        enemy['shoot_cooldown'] -= 1
+                        if enemy['shoot_cooldown'] <= 0:
+                            # Start warning phase
+                            enemy['warning_timer'] = 30  # Flash for 30 frames (~0.5 sec)
+                        elif enemy['shoot_cooldown'] < -1:  # After warning finishes
+                            player_center_x = player_x + player_width // 2
+                            player_center_y = player_y + player_height // 2
+                            enemy_center_x = enemy['x'] + enemy_width // 2
+                            enemy_center_y = enemy['y'] + enemy_height // 2
+                            dx = player_center_x - enemy_center_x
+                            dy = player_center_y - enemy_center_y
+                            dist = math.hypot(dx, dy)
+                            if dist == 0:
+                                dist = 1
+                            vx = (dx / dist) * current_enemy_bullet_speed
+                            vy = (dy / dist) * current_enemy_bullet_speed
+                            enemy_bullets.append([enemy_center_x, enemy_center_y, vx, vy])
+                            base_cooldown = max(45, 90 - difficulty_level * 8)
+                            enemy['shoot_cooldown'] = random.randint(base_cooldown, base_cooldown + 40)
+                            enemy['warning_timer'] = 0
 
                 if enemy['y'] > SCREEN_HEIGHT:
                     enemies.remove(enemy)
