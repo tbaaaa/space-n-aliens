@@ -21,6 +21,7 @@ PURPLE = (128, 0, 128)
 DARK_PURPLE = (80, 0, 80)
 YELLOW = (255, 255, 0)
 CYAN = (0, 255, 255)
+ORANGE = (255, 140, 0)
 
 # Difficulty tuning
 LEVEL_SIZE = 30  # points per difficulty step
@@ -55,6 +56,20 @@ boss = None
 boss_spawn_threshold = 100
 reflectable_projectiles = []
 score = 190
+
+# Final boss hazards
+swarm_minions = []  # kamikaze crash minions
+grabbers = []       # latch-on minions
+multiplying_bullets = []  # bouncing, splitting bullets
+exploding_bullets = []    # timed explosives
+laser_warnings = []       # telegraphed lasers before firing
+active_lasers = []        # active laser beams
+path_hazards = []         # winding corridor hazards
+
+# Grab state
+grabbed = False
+grab_escape_meter = 0
+grab_escape_target = 25
 font = pygame.font.Font(None, 36)
 
 # Game state
@@ -65,19 +80,28 @@ clock = pygame.time.Clock()
 FPS = 60
 
 def reset_game():
-    global player_x, bullets, enemies, enemy_bullets, boss, reflectable_projectiles, score, frame_count, player_hp, invincible, invincible_timer, boss_spawn_threshold
+    global player_x, bullets, enemies, enemy_bullets, boss, reflectable_projectiles, score, frame_count, player_hp, invincible, invincible_timer, boss_spawn_threshold, swarm_minions, grabbers, multiplying_bullets, exploding_bullets, laser_warnings, active_lasers, path_hazards, grabbed, grab_escape_meter
     player_x = SCREEN_WIDTH // 2 - player_width // 2
     bullets = []
     enemies = []
     enemy_bullets = []
     boss = None
     reflectable_projectiles = []
+    swarm_minions = []
+    grabbers = []
+    multiplying_bullets = []
+    exploding_bullets = []
+    laser_warnings = []
+    active_lasers = []
+    path_hazards = []
     boss_spawn_threshold = 100
     score = 190
     frame_count = 0
     player_hp = 3
     invincible = False
     invincible_timer = 0
+    grabbed = False
+    grab_escape_meter = 0
 
 # Game loop
 running = True
@@ -179,14 +203,24 @@ while running:
             current_enemy_bullet_speed = 9.5
         # Player movement (only when not paused)
         if game_state == 'playing':
-            if keys[pygame.K_a] and player_x > 0:
-                player_x -= current_player_speed
-            if keys[pygame.K_d] and player_x < SCREEN_WIDTH - player_width:
-                player_x += current_player_speed
-            if keys[pygame.K_w] and player_y > 0:
-                player_y -= current_player_speed
-            if keys[pygame.K_s] and player_y < SCREEN_HEIGHT - player_height:
-                player_y += current_player_speed
+            if not grabbed:
+                if keys[pygame.K_a] and player_x > 0:
+                    player_x -= current_player_speed
+                if keys[pygame.K_d] and player_x < SCREEN_WIDTH - player_width:
+                    player_x += current_player_speed
+                if keys[pygame.K_w] and player_y > 0:
+                    player_y -= current_player_speed
+                if keys[pygame.K_s] and player_y < SCREEN_HEIGHT - player_height:
+                    player_y += current_player_speed
+            else:
+                # Struggle mechanic when grabbed
+                grab_escape_meter = max(0, grab_escape_meter - 0.2)
+                if keys[pygame.K_a] or keys[pygame.K_d]:
+                    grab_escape_meter += 1
+                grab_escape_meter = max(0, min(grab_escape_meter, grab_escape_target))
+                if grab_escape_meter >= grab_escape_target:
+                    grabbed = False
+                    grab_escape_meter = 0
             mouse_pressed = pygame.mouse.get_pressed()
             if mouse_pressed[0] and frame_count % fire_interval == 0:  # LMB
                 mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -266,6 +300,55 @@ while running:
                 # Draw square hole in middle
                 hole_size = inner_radius
                 pygame.draw.rect(screen, BLACK, (center_x - hole_size // 2, center_y - hole_size // 2, hole_size, hole_size))
+            elif boss.get('type') == 'alien':
+                # Stage-based palette for alien boss
+                stage = boss.get('stage', 1)
+                stage_colors = {
+                    1: (90, 200, 255),   # cyan-ish
+                    2: (120, 255, 160),  # green-ish
+                    3: (255, 180, 90),   # orange-ish
+                    4: (255, 80, 120)    # red-ish
+                }
+                head_color = stage_colors.get(stage, boss_color)
+                accent_color = WHITE if stage < 3 else YELLOW
+                core_color = RED if stage >= 3 else PURPLE
+
+                center_x = boss['x'] + boss['width'] // 2
+                center_y = boss['y'] + boss['height'] // 2
+
+                # Main head
+                pygame.draw.ellipse(screen, head_color, (boss['x'], boss['y'], boss['width'], boss['height']))
+                # Forehead crest
+                crest_points = [
+                    (center_x, boss['y'] - 20),
+                    (boss['x'] + 20, boss['y'] + boss['height'] // 3),
+                    (boss['x'] + boss['width'] - 20, boss['y'] + boss['height'] // 3)
+                ]
+                pygame.draw.polygon(screen, accent_color, crest_points)
+                # Eyes
+                eye_w = boss['width'] // 5
+                eye_h = boss['height'] // 8
+                left_eye_rect = (boss['x'] + boss['width'] * 0.25 - eye_w // 2, center_y - eye_h, eye_w, eye_h)
+                right_eye_rect = (boss['x'] + boss['width'] * 0.75 - eye_w // 2, center_y - eye_h, eye_w, eye_h)
+                pygame.draw.ellipse(screen, BLACK, left_eye_rect)
+                pygame.draw.ellipse(screen, BLACK, right_eye_rect)
+                pygame.draw.circle(screen, RED, (int(left_eye_rect[0] + eye_w * 0.75), int(center_y)), 6)
+                pygame.draw.circle(screen, RED, (int(right_eye_rect[0] + eye_w * 0.25), int(center_y)), 6)
+                # Mouth / core
+                mouth_rect = (boss['x'] + boss['width'] * 0.35, center_y + boss['height'] * 0.15, boss['width'] * 0.3, boss['height'] * 0.15)
+                pygame.draw.ellipse(screen, core_color, mouth_rect)
+                # Tentacles
+                for i in range(5):
+                    offset = i * (boss['width'] // 5)
+                    start = (boss['x'] + offset + 10, boss['y'] + boss['height'])
+                    end = (start[0] + ((-1) ** i) * 40, boss['y'] + boss['height'] + 60)
+                    pygame.draw.line(screen, accent_color, start, end, 6)
+                # Shoulder spikes per stage
+                spike_span = boss['width'] // 4
+                for dx in [-spike_span, 0, spike_span]:
+                    spike_base = (center_x + dx, boss['y'] + boss['height'] * 0.2)
+                    spike_tip = (spike_base[0], spike_base[1] - 25 - stage * 5)
+                    pygame.draw.line(screen, core_color, spike_base, spike_tip, 5)
             else:
                 # Regular rectangular boss
                 pygame.draw.rect(screen, boss_color, (boss['x'], boss['y'], boss['width'], boss['height']))
@@ -295,6 +378,42 @@ while running:
             
             color = YELLOW if proj['reflected'] else PURPLE
             pygame.draw.polygon(screen, color, corners)
+
+        # Draw crash minions
+        for m in swarm_minions[:]:
+            pygame.draw.polygon(screen, RED, [
+                (m['x'], m['y']),
+                (m['x'] - 12, m['y'] + 30),
+                (m['x'] + 12, m['y'] + 30)
+            ])
+
+        # Draw grabbers (tentacle-like)
+        for g in grabbers[:]:
+            body_color = CYAN if not g.get('attached', False) else YELLOW
+            pygame.draw.circle(screen, body_color, (int(g['x']), int(g['y'])), 14)
+            pygame.draw.line(screen, PURPLE, (int(g['x']), int(g['y'])), (int(g['x']), int(g['y'] + 25)), 4)
+
+        # Draw multiplying bouncing bullets
+        for b in multiplying_bullets[:]:
+            pygame.draw.circle(screen, WHITE, (int(b['x']), int(b['y'])), 6)
+
+        # Draw exploding bullets (core + fuse ring)
+        for eb in exploding_bullets[:]:
+            pygame.draw.circle(screen, ORANGE, (int(eb['x']), int(eb['y'])), 7)
+            # Fuse indicator (shrinks as fuse ticks)
+            fuse_ratio = max(0, eb['fuse']) / eb['max_fuse']
+            pygame.draw.circle(screen, YELLOW, (int(eb['x']), int(eb['y'])), max(2, int(10 * fuse_ratio)), 2)
+
+        # Draw laser warnings and active lasers
+        for lw in laser_warnings[:]:
+            pygame.draw.line(screen, YELLOW, lw['start'], lw['end'], 3)
+        for al in active_lasers[:]:
+            pygame.draw.line(screen, RED, al['start'], al['end'], 8)
+
+        # Draw path hazards (safe corridors in DARK_PURPLE outline)
+        for path in path_hazards[:]:
+            for rect in path['rects']:
+                pygame.draw.rect(screen, (40, 0, 60), rect, 3)
 
         # Update game state (only when playing)
         if game_state == 'playing':
@@ -336,21 +455,24 @@ while running:
                         'vulnerable': False
                     }
                 else:
-                    # Default boss for 300+ (can be customized later)
+                    # Final boss - alien with stages and brutal patterns
                     boss = {
-                        'type': 'rect',
-                        'x': SCREEN_WIDTH // 2 - 60,
-                        'y': 50,
-                        'width': 120,
-                        'height': 120,
-                        'hp': 50,
-                        'max_hp': 50,
+                        'type': 'alien',
+                        'x': SCREEN_WIDTH // 2 - 90,
+                        'y': 40,
+                        'width': 180,
+                        'height': 180,
+                        'hp': 240,
+                        'max_hp': 240,
                         'attack_timer': 0,
                         'attack_pattern': 0,
-                        'vx': random.choice([-1, 1]) * 2.0,
-                        'vy': random.choice([-0.7, 0.7]),
+                        'vx': random.choice([-1, 1]) * 3.2,
+                        'vy': random.choice([-1.4, 1.4]),
                         'vulnerability_timer': 0,
-                        'vulnerable': False
+                        'vulnerable': True,  # always damageable, but very tanky
+                        'stage': 1,
+                        'last_stage': 1,
+                        'stage_change_timer': 0
                     }
                 boss_spawn_threshold += 100
 
@@ -371,14 +493,128 @@ while running:
                 boss['attack_timer'] += 1
                 boss['vulnerability_timer'] += 1
 
-                # Boss becomes vulnerable periodically (every 8 seconds for 1.5 seconds)
-                if boss['vulnerability_timer'] % 480 < 90:
+                # Vulnerability handling
+                if boss.get('type') == 'alien':
+                    boss['vulnerable'] = True
+                elif boss['vulnerability_timer'] % 480 < 90:
                     boss['vulnerable'] = True
                 else:
                     boss['vulnerable'] = False
 
                 # Different attack patterns based on boss type
-                if boss.get('type') == 'star':
+                if boss.get('type') == 'alien':
+                    # Stage calculation
+                    hp_ratio = boss['hp'] / boss['max_hp'] if boss['max_hp'] > 0 else 1
+                    stage = 1
+                    if hp_ratio <= 0.25:
+                        stage = 4
+                    elif hp_ratio <= 0.5:
+                        stage = 3
+                    elif hp_ratio <= 0.75:
+                        stage = 2
+                    if stage != boss.get('stage', 1):
+                        boss['stage'] = stage
+                        boss['stage_change_timer'] = 0
+                        # Slight speed ramp each transition
+                        boss['vx'] *= 1.15
+                        boss['vy'] *= 1.15
+                    boss['stage_change_timer'] += 1
+
+                    # Attack pattern selection cadence per stage
+                    if boss['stage'] == 1:
+                        pattern_pool = [0, 2]
+                        select_every = 110
+                    elif boss['stage'] == 2:
+                        pattern_pool = [0, 1, 3]
+                        select_every = 95
+                    elif boss['stage'] == 3:
+                        pattern_pool = [0, 1, 2, 3, 4]
+                        select_every = 80
+                    else:
+                        pattern_pool = [0, 1, 2, 3, 4, 5]
+                        select_every = 65
+
+                    if boss['attack_timer'] % select_every == 0:
+                        boss['attack_pattern'] = random.choice(pattern_pool)
+
+                    boss_x = boss['x'] + boss['width'] // 2
+                    boss_y = boss['y'] + boss['height'] // 2
+
+                    # Pattern definitions
+                    # 0: Swarm crash minions
+                    if boss['attack_pattern'] == 0 and boss['attack_timer'] % 35 == 0:
+                        for _ in range(2 + boss['stage']):
+                            spawn_edge = random.choice(['left', 'right', 'top'])
+                            if spawn_edge == 'top':
+                                sx = random.randint(0, SCREEN_WIDTH)
+                                sy = -20
+                            elif spawn_edge == 'left':
+                                sx = -20
+                                sy = random.randint(0, SCREEN_HEIGHT // 2)
+                            else:
+                                sx = SCREEN_WIDTH + 20
+                                sy = random.randint(0, SCREEN_HEIGHT // 2)
+                            dx = player_x + player_width // 2 - sx
+                            dy = player_y + player_height // 2 - sy
+                            dist = math.hypot(dx, dy) or 1
+                            speed = 3.5 + boss['stage'] * 0.6
+                            vx = (dx / dist) * speed
+                            vy = (dy / dist) * speed
+                            swarm_minions.append({'x': sx, 'y': sy, 'vx': vx, 'vy': vy})
+
+                    # 1: Grabber minion
+                    elif boss['attack_pattern'] == 1 and boss['attack_timer'] % 120 == 0:
+                        sx = boss_x + random.randint(-50, 50)
+                        sy = boss_y
+                        grabbers.append({'x': sx, 'y': sy, 'vx': 0, 'vy': 2.5 + boss['stage'] * 0.4, 'attached': False})
+
+                    # 2: Multiplying bouncing bullets
+                    elif boss['attack_pattern'] == 2 and boss['attack_timer'] % 25 == 0:
+                        dx = player_x + player_width // 2 - boss_x
+                        dy = player_y + player_height // 2 - boss_y
+                        dist = math.hypot(dx, dy) or 1
+                        speed = 6 + boss['stage'] * 0.7
+                        vx = (dx / dist) * speed
+                        vy = (dy / dist) * speed
+                        multiplying_bullets.append({'x': boss_x, 'y': boss_y, 'vx': vx, 'vy': vy, 'split_timer': 45, 'bounces': 0, 'split_count': 0})
+
+                    # 3: Exploding delayed shots
+                    elif boss['attack_pattern'] == 3 and boss['attack_timer'] % 40 == 0:
+                        dx = player_x + player_width // 2 - boss_x
+                        dy = player_y + player_height // 2 - boss_y
+                        dist = math.hypot(dx, dy) or 1
+                        speed = 5.5 + boss['stage'] * 0.5
+                        vx = (dx / dist) * speed
+                        vy = (dy / dist) * speed
+                        fuse = 90 - boss['stage'] * 10
+                        exploding_bullets.append({'x': boss_x, 'y': boss_y, 'vx': vx, 'vy': vy, 'fuse': fuse, 'max_fuse': fuse})
+
+                    # 4: Telegraph lasers
+                    elif boss['attack_pattern'] == 4 and boss['attack_timer'] % 140 == 0:
+                        orientation = random.choice(['vertical', 'diagonal'])
+                        if orientation == 'vertical':
+                            x_pos = random.randint(80, SCREEN_WIDTH - 80)
+                            start = (x_pos, 0)
+                            end = (x_pos, SCREEN_HEIGHT)
+                        else:
+                            start = (boss_x, boss_y)
+                            end = (random.randint(0, SCREEN_WIDTH), SCREEN_HEIGHT)
+                        laser_warnings.append({'start': start, 'end': end, 'charge': 50})
+
+                    # 5: Winding path hazard (stage 4 only)
+                    elif boss['attack_pattern'] == 5 and boss['stage'] >= 4 and boss['attack_timer'] % 200 == 0:
+                        segment_height = SCREEN_HEIGHT // 6
+                        corridor_width = 160
+                        x_center = random.randint(corridor_width, SCREEN_WIDTH - corridor_width)
+                        new_rects = []
+                        for i in range(6):
+                            x_center += random.randint(-120, 120)
+                            x_center = max(corridor_width, min(x_center, SCREEN_WIDTH - corridor_width))
+                            rect = pygame.Rect(x_center - corridor_width // 2, i * segment_height, corridor_width, segment_height)
+                            new_rects.append(rect)
+                        path_hazards.append({'rects': new_rects, 'duration': 220})
+
+                elif boss.get('type') == 'star':
                     # Star boss - shoots reflectable spinning squares and fast bullets
                     
                     # Pattern selection every 2 seconds
@@ -633,6 +869,148 @@ while running:
                 # Remove if off screen
                 if proj['x'] < -30 or proj['x'] > SCREEN_WIDTH + 30 or proj['y'] < -30 or proj['y'] > SCREEN_HEIGHT + 30:
                     reflectable_projectiles.remove(proj)
+            
+            # Update crash minions
+            for m in swarm_minions[:]:
+                m['x'] += m['vx']
+                m['y'] += m['vy']
+                if m['x'] < -40 or m['x'] > SCREEN_WIDTH + 40 or m['y'] > SCREEN_HEIGHT + 40:
+                    swarm_minions.remove(m)
+                    continue
+                if not invincible:
+                    if (player_x < m['x'] + 10 and player_x + player_width > m['x'] - 10 and
+                        player_y < m['y'] + 25 and player_y + player_height > m['y'] - 5):
+                        swarm_minions.remove(m)
+                        player_hp -= 1
+                        if player_hp <= 0:
+                            game_state = 'game_over'
+                        else:
+                            invincible = True
+                            invincible_timer = invincible_duration
+                        continue
+
+            # Update grabbers
+            for g in grabbers[:]:
+                if g.get('attached', False):
+                    g['x'] = player_x + player_width // 2
+                    g['y'] = player_y - 10
+                else:
+                    # Home in
+                    dx = player_x + player_width // 2 - g['x']
+                    dy = player_y + player_height // 2 - g['y']
+                    dist = math.hypot(dx, dy) or 1
+                    speed = g['vy']
+                    g['x'] += (dx / dist) * speed
+                    g['y'] += (dy / dist) * speed
+                    if not invincible and (abs(g['x'] - (player_x + player_width // 2)) < 20 and abs(g['y'] - (player_y + player_height // 2)) < 20):
+                        g['attached'] = True
+                        grabbed = True
+                        grab_escape_meter = 0
+                # Remove if player escaped and grabber detached
+                if not grabbed and g.get('attached', False):
+                    grabbers.remove(g)
+                    continue
+                if g['y'] > SCREEN_HEIGHT + 50:
+                    grabbers.remove(g)
+
+            # Update multiplying bullets
+            for b in multiplying_bullets[:]:
+                b['x'] += b['vx']
+                b['y'] += b['vy']
+                bounced = False
+                if b['x'] < 0 or b['x'] > SCREEN_WIDTH:
+                    b['vx'] *= -1
+                    bounced = True
+                if b['y'] < 0 or b['y'] > SCREEN_HEIGHT:
+                    b['vy'] *= -1
+                    bounced = True
+                if bounced:
+                    b['bounces'] += 1
+                b['split_timer'] -= 1
+                if b['split_timer'] <= 0 and b['split_count'] < 2:
+                    b['split_count'] += 1
+                    b['split_timer'] = 50 - 5 * b['split_count']
+                    # Create two off-angle bullets
+                    for angle_delta in [-25, 25]:
+                        angle = math.radians(angle_delta)
+                        cos_a = math.cos(angle)
+                        sin_a = math.sin(angle)
+                        new_vx = b['vx'] * cos_a - b['vy'] * sin_a
+                        new_vy = b['vx'] * sin_a + b['vy'] * cos_a
+                        multiplying_bullets.append({'x': b['x'], 'y': b['y'], 'vx': new_vx, 'vy': new_vy, 'split_timer': b['split_timer'], 'bounces': b['bounces'], 'split_count': b['split_count']})
+                if b['bounces'] > 4:
+                    multiplying_bullets.remove(b)
+
+            # Update exploding bullets
+            for eb in exploding_bullets[:]:
+                eb['x'] += eb['vx']
+                eb['y'] += eb['vy']
+                eb['fuse'] -= 1
+                if eb['fuse'] <= 0:
+                    # Explosion check
+                    explosion_radius = 90
+                    player_center = (player_x + player_width // 2, player_y + player_height // 2)
+                    dist = math.hypot(player_center[0] - eb['x'], player_center[1] - eb['y'])
+                    if dist < explosion_radius:
+                        player_hp -= 1 if not invincible else 0
+                        if player_hp <= 0:
+                            game_state = 'game_over'
+                        else:
+                            invincible = True
+                            invincible_timer = invincible_duration
+                    exploding_bullets.remove(eb)
+                    continue
+                if eb['x'] < -40 or eb['x'] > SCREEN_WIDTH + 40 or eb['y'] < -40 or eb['y'] > SCREEN_HEIGHT + 40:
+                    exploding_bullets.remove(eb)
+
+            # Update lasers
+            for lw in laser_warnings[:]:
+                lw['charge'] -= 1
+                if lw['charge'] <= 0:
+                    active_lasers.append({'start': lw['start'], 'end': lw['end'], 'life': 60})
+                    laser_warnings.remove(lw)
+            for al in active_lasers[:]:
+                al['life'] -= 1
+                # Player hit check (line vs point simplified by distance to segment)
+                if not invincible:
+                    px = player_x + player_width // 2
+                    py = player_y + player_height // 2
+                    x1, y1 = al['start']
+                    x2, y2 = al['end']
+                    # projection
+                    dx = x2 - x1
+                    dy = y2 - y1
+                    if dx == 0 and dy == 0:
+                        dist = math.hypot(px - x1, py - y1)
+                    else:
+                        t = max(0, min(1, ((px - x1) * dx + (py - y1) * dy) / (dx*dx + dy*dy)))
+                        proj_x = x1 + t * dx
+                        proj_y = y1 + t * dy
+                        dist = math.hypot(px - proj_x, py - proj_y)
+                    if dist < 12:
+                        player_hp = 0
+                        game_state = 'game_over'
+                    if game_state == 'game_over':
+                        active_lasers.clear()
+                        laser_warnings.clear()
+                        break
+                if al['life'] <= 0:
+                    active_lasers.remove(al)
+
+            # Update path hazards
+            for path in path_hazards[:]:
+                path['duration'] -= 1
+                # Check player inside corridor union
+                px = player_x + player_width // 2
+                py = player_y + player_height // 2
+                inside = any(rect.collidepoint(px, py) for rect in path['rects'])
+                if not inside:
+                    player_hp = 0
+                    game_state = 'game_over'
+                    path_hazards.clear()
+                    break
+                if path['duration'] <= 0:
+                    path_hazards.remove(path)
 
             # Update enemy bullets
             for eb in enemy_bullets[:]:
@@ -678,10 +1056,17 @@ while running:
                         if boss['hp'] <= 0:
                             boss = None
                             reflectable_projectiles.clear()
+                            swarm_minions.clear()
+                            grabbers.clear()
+                            multiplying_bullets.clear()
+                            exploding_bullets.clear()
+                            laser_warnings.clear()
+                            active_lasers.clear()
+                            path_hazards.clear()
                             score += 50
                         break
 
-            # Check bullet-boss collisions (only when vulnerable, but very low damage)
+            # Check bullet-boss collisions (only when vulnerable, damage varies by boss type)
             if boss and boss.get('vulnerable', False):
                 for bullet in bullets[:]:
                     if (bullet[0] < boss['x'] + boss['width'] and
@@ -690,10 +1075,22 @@ while running:
                         bullet[1] + bullet_height > boss['y']):
                         if bullet in bullets:
                             bullets.remove(bullet)
-                        # Very low damage - player should use reflected squares
-                        boss['hp'] -= 0.15
+                        if boss.get('type') == 'star':
+                            dmg = 0.15
+                        elif boss.get('type') == 'alien':
+                            dmg = 0.35
+                        else:
+                            dmg = 1
+                        boss['hp'] -= dmg
                         if boss['hp'] <= 0:
                             boss = None
+                            swarm_minions.clear()
+                            grabbers.clear()
+                            multiplying_bullets.clear()
+                            exploding_bullets.clear()
+                            laser_warnings.clear()
+                            active_lasers.clear()
+                            path_hazards.clear()
                             score += 50
                         break
 
@@ -733,6 +1130,22 @@ while running:
                         player_y < eb[1] + 6 and
                         player_y + player_height > eb[1] - 6):
                         enemy_bullets.remove(eb)
+                        player_hp -= 1
+                        if player_hp <= 0:
+                            game_state = 'game_over'
+                        else:
+                            invincible = True
+                            invincible_timer = invincible_duration
+                        break
+
+            # Check player hit by multiplying bullets
+            if not invincible:
+                for mb in multiplying_bullets[:]:
+                    if (player_x < mb['x'] + 6 and
+                        player_x + player_width > mb['x'] - 6 and
+                        player_y < mb['y'] + 6 and
+                        player_y + player_height > mb['y'] - 6):
+                        multiplying_bullets.remove(mb)
                         player_hp -= 1
                         if player_hp <= 0:
                             game_state = 'game_over'
