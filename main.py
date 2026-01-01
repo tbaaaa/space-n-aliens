@@ -237,12 +237,12 @@ while running:
 
         # Draw boss if active
         if boss:
-            boss_color = BLUE
+            # Boss flashes cyan when vulnerable
+            if boss.get('vulnerable', False):
+                boss_color = CYAN
+            else:
+                boss_color = BLUE
             pygame.draw.rect(screen, boss_color, (boss['x'], boss['y'], boss['width'], boss['height']))
-            # Draw weak spots
-            for spot in boss['weak_spots']:
-                spot_color = CYAN if spot.get('highlighted', False) else PURPLE
-                pygame.draw.circle(screen, spot_color, (int(spot['x']), int(spot['y'])), spot['radius'])
             # Draw boss HP bar
             hp_ratio = boss['hp'] / boss['max_hp']
             hp_bar_width = boss['width']
@@ -266,12 +266,8 @@ while running:
                     'attack_pattern': 0,
                     'vx': random.choice([-1, 1]) * 1.5,
                     'vy': random.choice([-0.5, 0.5]),
-                    'weak_spots': [
-                        {'x_offset': 30, 'y_offset': 30, 'radius': 10, 'highlighted': False},
-                        {'x_offset': 90, 'y_offset': 30, 'radius': 10, 'highlighted': False},
-                        {'x_offset': 60, 'y_offset': 90, 'radius': 10, 'highlighted': False}
-                    ],
-                    'weak_spot_timer': 0
+                    'vulnerability_timer': 0,
+                    'vulnerable': False
                 }
                 boss_spawn_threshold += 100
 
@@ -289,24 +285,14 @@ while running:
                     boss['vy'] *= -1
                     boss['y'] = max(0, min(boss['y'], SCREEN_HEIGHT // 2))
                 
-                # Update weak spot positions based on boss position
-                for spot in boss['weak_spots']:
-                    spot['x'] = boss['x'] + spot['x_offset']
-                    spot['y'] = boss['y'] + spot['y_offset']
-                
                 boss['attack_timer'] += 1
-                boss['weak_spot_timer'] += 1
+                boss['vulnerability_timer'] += 1
 
-                # Highlight weak spots periodically (every 5 seconds)
-                if boss['weak_spot_timer'] % 300 == 0:
-                    for spot in boss['weak_spots']:
-                        spot['highlighted'] = True
-                elif boss['weak_spot_timer'] % 300 > 240:
-                    for spot in boss['weak_spots']:
-                        spot['highlighted'] = True
+                # Boss becomes vulnerable periodically (every 5 seconds for 1 second)
+                if boss['vulnerability_timer'] % 300 < 60:
+                    boss['vulnerable'] = True
                 else:
-                    for spot in boss['weak_spots']:
-                        spot['highlighted'] = False
+                    boss['vulnerable'] = False
 
                 # Boss attack patterns
                 if boss['attack_timer'] % 40 == 0:
@@ -483,6 +469,21 @@ while running:
                 bullet[1] += bullet[3]
                 if bullet[0] < -bullet_width or bullet[0] > SCREEN_WIDTH or bullet[1] < -bullet_height or bullet[1] > SCREEN_HEIGHT:
                     bullets.remove(bullet)
+
+            # Check bullet-boss collisions (only when vulnerable)
+            if boss and boss.get('vulnerable', False):
+                for bullet in bullets[:]:
+                    if (bullet[0] < boss['x'] + boss['width'] and
+                        bullet[0] + bullet_width > boss['x'] and
+                        bullet[1] < boss['y'] + boss['height'] and
+                        bullet[1] + bullet_height > boss['y']):
+                        if bullet in bullets:
+                            bullets.remove(bullet)
+                        boss['hp'] -= 1
+                        if boss['hp'] <= 0:
+                            boss = None
+                            score += 50
+                        break
 
             # Check bullet-enemy collisions
             for bullet in bullets[:]:
