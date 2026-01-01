@@ -45,7 +45,7 @@ enemy_width = 50
 enemy_height = 50
 enemy_speed = 2
 enemies = []
-enemy_spawn_rate = 60  # frames
+enemy_spawn_rate = 75  # frames
 enemy_bullets = []
 
 # Score
@@ -139,7 +139,7 @@ while running:
         current_bullet_speed = bullet_speed + min(3 * difficulty_level, 20)
         fire_interval = max(6, 24 - difficulty_level * 2)
         current_enemy_speed = enemy_speed + min(0.5 * difficulty_level, 6)
-        current_spawn_rate = max(10, enemy_spawn_rate - difficulty_level * 3)
+        current_spawn_rate = max(12, enemy_spawn_rate - difficulty_level * 2)
         current_enemy_bullet_speed = 6 + min(0.5 * difficulty_level, 6)
         # Player movement (only when not paused)
         if game_state == 'playing':
