@@ -589,7 +589,7 @@ while running:
                         multiplying_bullets.append({'x': boss_x, 'y': boss_y, 'vx': vx, 'vy': vy, 'bounces': 0, 'split_count': 0})
 
                     # 3: Exploding delayed shots
-                    elif boss['attack_pattern'] == 3 and boss['attack_timer'] % 50 == 0:
+                    elif boss['attack_pattern'] == 3 and boss['attack_timer'] % 35 == 0:
                         dx = player_x + player_width // 2 - boss_x
                         dy = player_y + player_height // 2 - boss_y
                         dist = math.hypot(dx, dy) or 1
@@ -990,7 +990,7 @@ while running:
                 eb['fuse'] -= 1
                 if eb['fuse'] <= 0:
                     # Explosion check
-                    explosion_radius = 70
+                    explosion_radius = 80
                     player_center = (player_x + player_width // 2, player_y + player_height // 2)
                     dist = math.hypot(player_center[0] - eb['x'], player_center[1] - eb['y'])
                     if dist < explosion_radius:
