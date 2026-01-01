@@ -83,7 +83,7 @@ e_key_pressed = False
 # Hyperdrive cutscene
 hyperdrive_active = False
 hyperdrive_timer = 0
-hyperdrive_duration = 600  # 10 seconds
+hyperdrive_duration = 360  # 6 seconds
 ship_shake_x = 0
 ship_shake_y = 0
 environment_level = 0  # 0=normal, 1=after first boss, 2=after second boss, 3=after final boss
@@ -313,6 +313,9 @@ while running:
                     ship_shake_x = 0
                     ship_shake_y = 0
                     environment_level += 1
+                    # Grant post-hyperdrive immunity
+                    invincible = True
+                    invincible_timer = 180  # 3 seconds of immunity
             else:
                 ship_shake_x = 0
                 ship_shake_y = 0
@@ -437,8 +440,8 @@ while running:
         for enemy in enemies[:]:
             enemy_color = PURPLE
             if enemy['type'] == 'shooter' and enemy.get('warning_timer', 0) > 0:
-                # Flash dark purple every 5 frames
-                if (enemy['warning_timer'] // 5) % 2 == 0:
+                # Flash dark purple every 3 frames (faster)
+                if (enemy['warning_timer'] // 3) % 2 == 0:
                     enemy_color = DARK_PURPLE
             pygame.draw.rect(screen, enemy_color, (enemy['x'], enemy['y'], enemy_width, enemy_height))
 
@@ -1007,12 +1010,12 @@ while running:
                 if enemy_type == 'shooter':
                     # Shooter cooldown: shorter as score increases
                     if score < 150:
-                        base_cooldown = 80
+                        base_cooldown = 50  # Reduced from 80
                     elif score < 200:
-                        base_cooldown = 60
+                        base_cooldown = 40  # Reduced from 60
                     else:
-                        base_cooldown = 45
-                    new_enemy['shoot_cooldown'] = random.randint(base_cooldown, base_cooldown + 40)
+                        base_cooldown = 30  # Reduced from 45
+                    new_enemy['shoot_cooldown'] = random.randint(base_cooldown, base_cooldown + 30)  # Reduced range
                 enemies.append(new_enemy)
 
             # Update enemies
@@ -1030,7 +1033,7 @@ while running:
                 enemy['y'] += current_enemy_speed
 
                 if enemy['type'] == 'shooter':
-                    warning_duration = 10
+                    warning_duration = 6  # Reduced from 10 to 6
                     enemy['shoot_cooldown'] -= 1
 
                     # Start warning when cooldown is close to firing
@@ -1052,14 +1055,14 @@ while running:
                             vx = (dx / dist) * current_enemy_bullet_speed
                             vy = (dy / dist) * current_enemy_bullet_speed
                             enemy_bullets.append([enemy_center_x, enemy_center_y, vx, vy])
-                            # Use current_enemy_bullet_speed cooldown based on shooter config
+                            # Use faster cooldown
                             if score < 150:
-                                base_cooldown = 80
+                                base_cooldown = 50  # Reduced from 80
                             elif score < 200:
-                                base_cooldown = 60
+                                base_cooldown = 40  # Reduced from 60
                             else:
-                                base_cooldown = 45
-                            enemy['shoot_cooldown'] = random.randint(base_cooldown, base_cooldown + 40)
+                                base_cooldown = 30  # Reduced from 45
+                            enemy['shoot_cooldown'] = random.randint(base_cooldown, base_cooldown + 30)  # Reduced range
                             enemy['warning_timer'] = 0
                     elif enemy['shoot_cooldown'] <= 0:
                         # Failsafe: if warning was skipped, still fire
@@ -1075,14 +1078,14 @@ while running:
                         vx = (dx / dist) * current_enemy_bullet_speed
                         vy = (dy / dist) * current_enemy_bullet_speed
                         enemy_bullets.append([enemy_center_x, enemy_center_y, vx, vy])
-                        # Use current_enemy_bullet_speed cooldown based on shooter config
+                        # Use faster cooldown (same as above)
                         if score < 150:
-                            base_cooldown = 80
+                            base_cooldown = 50
                         elif score < 200:
-                            base_cooldown = 60
+                            base_cooldown = 40
                         else:
-                            base_cooldown = 45
-                        enemy['shoot_cooldown'] = random.randint(base_cooldown, base_cooldown + 40)
+                            base_cooldown = 30
+                        enemy['shoot_cooldown'] = random.randint(base_cooldown, base_cooldown + 30)
                         enemy['warning_timer'] = 0
 
                 if enemy['y'] > SCREEN_HEIGHT:
