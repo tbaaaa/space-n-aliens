@@ -938,7 +938,7 @@ while running:
                         new_vx = b['vx'] * cos_a - b['vy'] * sin_a
                         new_vy = b['vx'] * sin_a + b['vy'] * cos_a
                         multiplying_bullets.append({'x': b['x'], 'y': b['y'], 'vx': new_vx, 'vy': new_vy, 'split_timer': b['split_timer'], 'bounces': b['bounces'], 'split_count': b['split_count']})
-                if b['bounces'] > 3:
+                if b['bounces'] > 1:
                     multiplying_bullets.remove(b)
 
             # Update exploding bullets
