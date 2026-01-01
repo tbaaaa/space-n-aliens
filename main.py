@@ -75,6 +75,10 @@ grab_escape_meter = 0
 grab_escape_target = 18
 font = pygame.font.Font(None, 36)
 
+# Debug mode
+debug_invincible = False
+e_key_pressed = False
+
 # Game state
 game_state = 'title'
 
@@ -227,7 +231,6 @@ while running:
                     grab_escape_meter = 0
             
             # DEBUG: Toggle invincibility with E key
-            global debug_invincible, e_key_pressed
             if keys[pygame.K_e]:
                 if not e_key_pressed:
                     e_key_pressed = True
