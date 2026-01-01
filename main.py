@@ -300,8 +300,8 @@ while running:
         if game_state == 'playing':
             # Spawn boss if score threshold is reached
             if boss is None and score >= boss_spawn_threshold and score % 100 == 0 and frame_count > 0:
-                # Determine boss type based on score
-                if boss_spawn_threshold == 100:
+                # Determine boss type based on current score
+                if score == 100:
                     # First boss - rectangular
                     boss = {
                         'type': 'rect',
@@ -318,7 +318,7 @@ while running:
                         'vulnerability_timer': 0,
                         'vulnerable': False
                     }
-                elif boss_spawn_threshold == 200:
+                elif score == 200:
                     # Second boss - star with reflectable projectiles
                     boss = {
                         'type': 'star',
@@ -331,6 +331,23 @@ while running:
                         'attack_timer': 0,
                         'vx': random.choice([-1, 1]) * 2.5,
                         'vy': random.choice([-0.8, 0.8]),
+                        'vulnerability_timer': 0,
+                        'vulnerable': False
+                    }
+                else:
+                    # Default boss for 300+ (can be customized later)
+                    boss = {
+                        'type': 'rect',
+                        'x': SCREEN_WIDTH // 2 - 60,
+                        'y': 50,
+                        'width': 120,
+                        'height': 120,
+                        'hp': 50,
+                        'max_hp': 50,
+                        'attack_timer': 0,
+                        'attack_pattern': 0,
+                        'vx': random.choice([-1, 1]) * 2.0,
+                        'vy': random.choice([-0.7, 0.7]),
                         'vulnerability_timer': 0,
                         'vulnerable': False
                     }
