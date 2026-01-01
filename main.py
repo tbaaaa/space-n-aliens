@@ -354,7 +354,7 @@ while running:
             # Spawn distant planets periodically
             if game_state == 'playing' and not hyperdrive_active:
                 planet_spawn_timer += 1
-                if planet_spawn_timer > random.randint(1800, 3600):  # Every 30-60 seconds
+                if planet_spawn_timer > 1200:  # Every 20 seconds
                     planet_spawn_timer = 0
                     num_planets = random.randint(1, 2)  # Spawn 1 or 2 planets
                     for _ in range(num_planets):
