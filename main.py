@@ -55,9 +55,9 @@ enemy_bullets = []
 
 # Boss
 boss = None
-boss_spawn_threshold = 300
+boss_spawn_threshold = 100
 reflectable_projectiles = []
-score = 290
+score = 0
 
 # Final boss hazards
 swarm_minions = []  # kamikaze crash minions
@@ -102,8 +102,8 @@ def reset_game():
     active_lasers = []
     path_hazards = []
     explosion_effects = []
-    boss_spawn_threshold = 300
-    score = 290
+    boss_spawn_threshold = 100
+    score = 0
     frame_count = 0
     player_hp = 3
     invincible = False
@@ -491,7 +491,7 @@ while running:
                         'y': 40,
                         'width': 180,
                         'height': 180,
-                        'hp': 45,  # Start at 25% HP (stage 4)
+                        'hp': 180,
                         'max_hp': 180,
                         'attack_timer': 0,
                         'attack_pattern': 0,
@@ -499,8 +499,8 @@ while running:
                         'vy': random.choice([-1.1, 1.1]),
                         'vulnerability_timer': 0,
                         'vulnerable': True,  # always damageable, but very tanky
-                        'stage': 4,  # Start at stage 4 for testing
-                        'last_stage': 4,
+                        'stage': 1,
+                        'last_stage': 1,
                         'stage_change_timer': 0
                     }
                 boss_spawn_threshold += 100
