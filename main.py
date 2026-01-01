@@ -37,6 +37,7 @@ invincible = False
 invincible_timer = 0
 invincible_duration = 120  # frames (2 seconds at 60 FPS)
 debug_invincible = False  # DEBUG: Toggle with E key
+e_key_pressed = False  # Track E key state
 
 # Bullet
 bullet_width = 5
@@ -226,13 +227,13 @@ while running:
                     grab_escape_meter = 0
             
             # DEBUG: Toggle invincibility with E key
+            global debug_invincible, e_key_pressed
             if keys[pygame.K_e]:
-                if not hasattr(game_state, '_e_pressed'):
-                    game_state._e_pressed = True
+                if not e_key_pressed:
+                    e_key_pressed = True
                     debug_invincible = not debug_invincible
             else:
-                if hasattr(game_state, '_e_pressed'):
-                    game_state._e_pressed = False
+                e_key_pressed = False
             
             mouse_pressed = pygame.mouse.get_pressed()
             if mouse_pressed[0] and frame_count % fire_interval == 0:  # LMB
