@@ -53,7 +53,8 @@ enemy_bullets = []
 # Boss
 boss = None
 boss_spawn_threshold = 100
-score = 90
+reflectable_projectiles = []
+score = 190
 font = pygame.font.Font(None, 36)
 
 # Game state
@@ -64,14 +65,15 @@ clock = pygame.time.Clock()
 FPS = 60
 
 def reset_game():
-    global player_x, bullets, enemies, enemy_bullets, boss, score, frame_count, player_hp, invincible, invincible_timer, boss_spawn_threshold
+    global player_x, bullets, enemies, enemy_bullets, boss, reflectable_projectiles, score, frame_count, player_hp, invincible, invincible_timer, boss_spawn_threshold
     player_x = SCREEN_WIDTH // 2 - player_width // 2
     bullets = []
     enemies = []
     enemy_bullets = []
     boss = None
+    reflectable_projectiles = []
     boss_spawn_threshold = 100
-    score = 90
+    score = 190
     frame_count = 0
     player_hp = 3
     invincible = False
@@ -242,7 +244,32 @@ while running:
                 boss_color = CYAN
             else:
                 boss_color = BLUE
-            pygame.draw.rect(screen, boss_color, (boss['x'], boss['y'], boss['width'], boss['height']))
+            
+            if boss.get('type') == 'star':
+                # Draw star boss with square hole
+                center_x = boss['x'] + boss['width'] // 2
+                center_y = boss['y'] + boss['height'] // 2
+                outer_radius = boss['width'] // 2
+                inner_radius = outer_radius // 3
+                
+                # Draw star points
+                points = []
+                for i in range(8):
+                    angle = i * (360 / 8)
+                    radius = outer_radius if i % 2 == 0 else inner_radius * 1.5
+                    rad = math.radians(angle - 90)
+                    x = center_x + radius * math.cos(rad)
+                    y = center_y + radius * math.sin(rad)
+                    points.append((x, y))
+                pygame.draw.polygon(screen, boss_color, points)
+                
+                # Draw square hole in middle
+                hole_size = inner_radius
+                pygame.draw.rect(screen, BLACK, (center_x - hole_size // 2, center_y - hole_size // 2, hole_size, hole_size))
+            else:
+                # Regular rectangular boss
+                pygame.draw.rect(screen, boss_color, (boss['x'], boss['y'], boss['width'], boss['height']))
+            
             # Draw boss HP bar
             hp_ratio = boss['hp'] / boss['max_hp']
             hp_bar_width = boss['width']
@@ -250,25 +277,63 @@ while running:
             pygame.draw.rect(screen, RED, (boss['x'], boss['y'] - 20, hp_bar_width * hp_ratio, hp_bar_height))
             pygame.draw.rect(screen, WHITE, (boss['x'], boss['y'] - 20, hp_bar_width, hp_bar_height), 2)
 
+        # Draw reflectable projectiles
+        for proj in reflectable_projectiles[:]:
+            # Rotate square based on rotation angle
+            angle = proj['rotation']
+            size = 15
+            center_x, center_y = proj['x'], proj['y']
+            
+            # Calculate rotated corners
+            corners = []
+            for i in range(4):
+                corner_angle = angle + i * 90
+                rad = math.radians(corner_angle)
+                x = center_x + size * math.cos(rad)
+                y = center_y + size * math.sin(rad)
+                corners.append((x, y))
+            
+            color = YELLOW if proj['reflected'] else PURPLE
+            pygame.draw.polygon(screen, color, corners)
+
         # Update game state (only when playing)
         if game_state == 'playing':
             # Spawn boss if score threshold is reached
             if boss is None and score >= boss_spawn_threshold and score % 100 == 0 and frame_count > 0:
-                # Spawn a new boss
-                boss = {
-                    'x': SCREEN_WIDTH // 2 - 60,
-                    'y': 50,
-                    'width': 120,
-                    'height': 120,
-                    'hp': 30,
-                    'max_hp': 30,
-                    'attack_timer': 0,
-                    'attack_pattern': 0,
-                    'vx': random.choice([-1, 1]) * 1.5,
-                    'vy': random.choice([-0.5, 0.5]),
-                    'vulnerability_timer': 0,
-                    'vulnerable': False
-                }
+                # Determine boss type based on score
+                if boss_spawn_threshold == 100:
+                    # First boss - rectangular
+                    boss = {
+                        'type': 'rect',
+                        'x': SCREEN_WIDTH // 2 - 60,
+                        'y': 50,
+                        'width': 120,
+                        'height': 120,
+                        'hp': 30,
+                        'max_hp': 30,
+                        'attack_timer': 0,
+                        'attack_pattern': 0,
+                        'vx': random.choice([-1, 1]) * 1.5,
+                        'vy': random.choice([-0.5, 0.5]),
+                        'vulnerability_timer': 0,
+                        'vulnerable': False
+                    }
+                elif boss_spawn_threshold == 200:
+                    # Second boss - star with reflectable projectiles
+                    boss = {
+                        'type': 'star',
+                        'x': SCREEN_WIDTH // 2 - 75,
+                        'y': 50,
+                        'width': 150,
+                        'height': 150,
+                        'hp': 40,
+                        'max_hp': 40,
+                        'attack_timer': 0,
+                        'vx': random.choice([-1, 1]) * 2.5,
+                        'vy': random.choice([-0.8, 0.8]),
+                        'vulnerability_timer': 0,
+                        'vulnerable': False
+                    }
                 boss_spawn_threshold += 100
 
             # Update boss if active
@@ -294,36 +359,57 @@ while running:
                 else:
                     boss['vulnerable'] = False
 
-                # Boss attack patterns
-                if boss['attack_timer'] % 40 == 0:
-                    boss['attack_pattern'] = random.randint(0, 1)
+                # Different attack patterns based on boss type
+                if boss.get('type') == 'star':
+                    # Star boss - shoots reflectable spinning squares
+                    if boss['attack_timer'] % 60 == 0:
+                        boss_x = boss['x'] + boss['width'] // 2
+                        boss_y = boss['y'] + boss['height'] // 2
+                        # Shoot 4 reflectable squares in cardinal directions
+                        for angle in [0, 90, 180, 270]:
+                            rad = math.radians(angle)
+                            vx = math.cos(rad) * 3
+                            vy = math.sin(rad) * 3
+                            reflectable_projectiles.append({
+                                'x': boss_x,
+                                'y': boss_y,
+                                'vx': vx,
+                                'vy': vy,
+                                'rotation': angle,
+                                'reflected': False
+                            })
+                else:
+                    # Regular rectangular boss attacks
+                    # Boss attack patterns
+                    if boss['attack_timer'] % 40 == 0:
+                        boss['attack_pattern'] = random.randint(0, 1)
 
-                # Pattern 0: Spread shot aimed at player
-                if boss['attack_pattern'] == 0 and boss['attack_timer'] % 40 == 0:
-                    boss_x = boss['x'] + boss['width'] // 2
-                    boss_y = boss['y'] + boss['height']
-                    # Calculate angle to player
-                    dx = player_x + player_width // 2 - boss_x
-                    dy = player_y + player_height // 2 - boss_y
-                    base_angle = math.degrees(math.atan2(dy, dx))
-                    # Fire 3 shots in a spread around player direction
-                    for angle_offset in [-15, 0, 15]:
-                        angle = base_angle + angle_offset
-                        rad = math.radians(angle)
-                        vx = math.cos(rad) * 4
-                        vy = math.sin(rad) * 4
-                        enemy_bullets.append([boss_x, boss_y, vx, vy])
-                # Pattern 1: Aimed shot at player
-                elif boss['attack_pattern'] == 1 and boss['attack_timer'] % 50 == 0:
-                    boss_x = boss['x'] + boss['width'] // 2
-                    boss_y = boss['y'] + boss['height']
-                    dx = player_x + player_width // 2 - boss_x
-                    dy = player_y + player_height // 2 - boss_y
-                    dist = math.hypot(dx, dy)
-                    if dist > 0:
-                        vx = (dx / dist) * 5
-                        vy = (dy / dist) * 5
-                        enemy_bullets.append([boss_x, boss_y, vx, vy])
+                    # Pattern 0: Spread shot aimed at player
+                    if boss['attack_pattern'] == 0 and boss['attack_timer'] % 40 == 0:
+                        boss_x = boss['x'] + boss['width'] // 2
+                        boss_y = boss['y'] + boss['height']
+                        # Calculate angle to player
+                        dx = player_x + player_width // 2 - boss_x
+                        dy = player_y + player_height // 2 - boss_y
+                        base_angle = math.degrees(math.atan2(dy, dx))
+                        # Fire 3 shots in a spread around player direction
+                        for angle_offset in [-15, 0, 15]:
+                            angle = base_angle + angle_offset
+                            rad = math.radians(angle)
+                            vx = math.cos(rad) * 4
+                            vy = math.sin(rad) * 4
+                            enemy_bullets.append([boss_x, boss_y, vx, vy])
+                    # Pattern 1: Aimed shot at player
+                    elif boss['attack_pattern'] == 1 and boss['attack_timer'] % 50 == 0:
+                        boss_x = boss['x'] + boss['width'] // 2
+                        boss_y = boss['y'] + boss['height']
+                        dx = player_x + player_width // 2 - boss_x
+                        dy = player_y + player_height // 2 - boss_y
+                        dist = math.hypot(dx, dy)
+                        if dist > 0:
+                            vx = (dx / dist) * 5
+                            vy = (dy / dist) * 5
+                            enemy_bullets.append([boss_x, boss_y, vx, vy])
 
             # Spawn regular enemies only if no boss
             if boss is None and frame_count % current_spawn_rate == 0:
@@ -456,6 +542,16 @@ while running:
                             invincible_timer = invincible_duration
                     continue
 
+            # Update reflectable projectiles
+            for proj in reflectable_projectiles[:]:
+                proj['x'] += proj['vx']
+                proj['y'] += proj['vy']
+                # Spin the projectile
+                proj['rotation'] += 5
+                # Remove if off screen
+                if proj['x'] < -30 or proj['x'] > SCREEN_WIDTH + 30 or proj['y'] < -30 or proj['y'] > SCREEN_HEIGHT + 30:
+                    reflectable_projectiles.remove(proj)
+
             # Update enemy bullets
             for eb in enemy_bullets[:]:
                 eb[0] += eb[2]
@@ -469,6 +565,39 @@ while running:
                 bullet[1] += bullet[3]
                 if bullet[0] < -bullet_width or bullet[0] > SCREEN_WIDTH or bullet[1] < -bullet_height or bullet[1] > SCREEN_HEIGHT:
                     bullets.remove(bullet)
+
+            # Check bullet collisions with reflectable projectiles
+            for bullet in bullets[:]:
+                for proj in reflectable_projectiles[:]:
+                    if not proj['reflected']:
+                        # Check collision
+                        dist = math.hypot(bullet[0] - proj['x'], bullet[1] - proj['y'])
+                        if dist < 20:
+                            bullets.remove(bullet)
+                            # Reflect projectile back towards boss
+                            if boss:
+                                dx = boss['x'] + boss['width'] // 2 - proj['x']
+                                dy = boss['y'] + boss['height'] // 2 - proj['y']
+                                dist_to_boss = math.hypot(dx, dy)
+                                if dist_to_boss > 0:
+                                    proj['vx'] = (dx / dist_to_boss) * 5
+                                    proj['vy'] = (dy / dist_to_boss) * 5
+                                    proj['reflected'] = True
+                            break
+
+            # Check reflected projectiles hitting boss
+            for proj in reflectable_projectiles[:]:
+                if proj['reflected'] and boss:
+                    # Check collision with boss
+                    if (proj['x'] > boss['x'] - 15 and proj['x'] < boss['x'] + boss['width'] + 15 and
+                        proj['y'] > boss['y'] - 15 and proj['y'] < boss['y'] + boss['height'] + 15):
+                        reflectable_projectiles.remove(proj)
+                        boss['hp'] -= 2  # Reflected projectiles do more damage
+                        if boss['hp'] <= 0:
+                            boss = None
+                            reflectable_projectiles.clear()
+                            score += 50
+                        break
 
             # Check bullet-boss collisions (only when vulnerable)
             if boss and boss.get('vulnerable', False):
@@ -528,6 +657,21 @@ while running:
                             invincible = True
                             invincible_timer = invincible_duration
                         break
+
+            # Check player hit by unreflected projectiles
+            if not invincible:
+                for proj in reflectable_projectiles[:]:
+                    if not proj['reflected']:
+                        dist = math.hypot(player_x + player_width // 2 - proj['x'], player_y + player_height // 2 - proj['y'])
+                        if dist < 25:
+                            reflectable_projectiles.remove(proj)
+                            player_hp -= 1
+                            if player_hp <= 0:
+                                game_state = 'game_over'
+                            else:
+                                invincible = True
+                                invincible_timer = invincible_duration
+                            break
 
             # Update invincibility timer
             if invincible:
