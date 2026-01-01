@@ -1016,19 +1016,15 @@ while running:
                 elif score < 150:
                     enemy_type = random.choice(['sine', 'zigzag', 'straight'])
                 elif score < 200:
-                    # Side turrets available after first boss
-                    if boss_1_defeated:
-                        enemy_type = random.choice(['sine', 'zigzag', 'shooter', 'straight', 'side_turret'])
-                    else:
-                        enemy_type = random.choice(['sine', 'zigzag', 'shooter', 'straight'])
+                    enemy_type = random.choice(['sine', 'zigzag', 'shooter', 'straight'])
                 else:  # score >= 200
-                    # Horizontal turrets available after second boss
-                    if boss_2_defeated:
-                        enemy_type = random.choice(['sine', 'zigzag', 'shooter', 'straight', 'side_turret', 'side_turret', 'horizontal_turret'])
-                    elif boss_1_defeated:
-                        enemy_type = random.choice(['sine', 'zigzag', 'shooter', 'straight', 'side_turret', 'side_turret'])
-                    else:
-                        enemy_type = random.choice(['sine', 'zigzag', 'shooter', 'straight'])
+                    enemy_type = random.choice(['sine', 'zigzag', 'shooter', 'straight'])
+                
+                # Add turret types based on boss defeats
+                if boss_1_defeated and score >= 100:
+                    enemy_type = random.choice([enemy_type, 'side_turret'])
+                if boss_2_defeated and score >= 200:
+                    enemy_type = random.choice([enemy_type, 'horizontal_turret'])
 
                 # Handle side turret spawning separately (edge-based)
                 if enemy_type == 'side_turret':
