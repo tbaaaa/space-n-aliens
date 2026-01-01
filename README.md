@@ -25,18 +25,23 @@ The game window is resizable - you can maximize, restore, or resize it as needed
 - **W/S Keys**: Move the spaceship up/down
 - **Left Mouse Button**: Aim and shoot bullets (aim with mouse cursor)
 - **ESC Key**: Pause the game
+- **Mash A/D**: Break free if a grabber latches onto you
 
 ### Game Features
-- **HP System**: Your ship starts with 3 HP
-- **Visual HP Indicator**: Ship color changes based on health:
-  - 3 HP: Green
-  - 2 HP: Yellow
-  - 1 HP: Red
-- **Invincibility Frames**: After taking damage, your ship flashes and becomes invincible for 2 seconds
-- **Purple Aliens**: Shoot down the purple alien invaders before they reach you!
-- **Collision System**: Aliens that touch your ship deal 1 damage and are destroyed
-- **Pause Menu**: Press ESC to pause and access Resume, Back to Title, or Exit options
-- **Multiple Screens**: Title screen, pause menu, and game over screen with various options
+- **HP System**: 3 HP with color feedback (green/yellow/red) and 2s invincibility frames after hits
+- **Resizable Window**: Play in any window size
+- **Enemy Types**: Straight, sine, zigzag, and shooter variants unlocked by score milestones
+- **Boss Progression**: Spawns at scores 100, 200, and 300+
+  - **Boss 1 (100)**: Rectangular, spread + aimed shots, periodic vulnerability windows
+  - **Boss 2 (200)**: Star with a central void, launches spinning squares you can reflect back; very low bullet damage unless boss is vulnerable
+  - **Final Boss (300)**: Multi-stage alien (4 phases) with ramping speed and attacks (minion swarms, grabbers, multiplying shots, explosives, player-aimed lasers, and winding corridors)
+- **Hazards & Patterns**:
+  - **Grabbers**: Latch and freeze movement; mash A/D to escape before their lifespan ends
+  - **Multiplying Shots**: Split on bounces (limited bounces) and then despawn
+  - **Exploding Shots**: Timed fuse, visible blast ring on detonation
+  - **Lasers**: Telegraph then fire as thick beams aimed edge-to-edge through the player’s position
+  - **Winding Corridors** (late stages): Stay inside the drawn paths or take damage
+- **UI/States**: Title, pause, and game-over screens with navigation buttons
 
 ### Game Objective
 - Survive as long as possible by shooting purple aliens
