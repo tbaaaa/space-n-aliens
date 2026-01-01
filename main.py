@@ -53,9 +53,9 @@ enemy_bullets = []
 
 # Boss
 boss = None
-boss_spawn_threshold = 100
+boss_spawn_threshold = 200
 reflectable_projectiles = []
-score = 0
+score = 190
 
 # Final boss hazards
 swarm_minions = []  # kamikaze crash minions
@@ -96,8 +96,8 @@ def reset_game():
     active_lasers = []
     path_hazards = []
     explosion_effects = []
-    boss_spawn_threshold = 100
-    score = 0
+    boss_spawn_threshold = 200
+    score = 190
     frame_count = 0
     player_hp = 3
     invincible = False
