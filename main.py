@@ -1020,11 +1020,11 @@ while running:
                 else:  # score >= 200
                     enemy_type = random.choice(['sine', 'zigzag', 'shooter', 'straight'])
                 
-                # Add turret types based on boss defeats
-                if boss_1_defeated and score >= 100:
-                    enemy_type = random.choice([enemy_type, 'side_turret'])
-                if boss_2_defeated and score >= 200:
-                    enemy_type = random.choice([enemy_type, 'horizontal_turret'])
+                # Add turret types based on boss defeats (lower frequency, not during hyperdrive)
+                if not hyperdrive_active and boss_1_defeated and score >= 100 and random.random() < 0.25:
+                    enemy_type = 'side_turret'
+                if not hyperdrive_active and boss_2_defeated and score >= 200 and random.random() < 0.25:
+                    enemy_type = 'horizontal_turret'
 
                 # Handle side turret spawning separately (edge-based)
                 if enemy_type == 'side_turret':
