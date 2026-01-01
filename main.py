@@ -54,10 +54,13 @@ enemies = []
 enemy_spawn_rate = 55  # frames
 enemy_bullets = []
 side_turrets = []  # Side enemies that shoot from edges
+horizontal_turrets = []  # Top/bottom turrets that move left/right
 
 # Boss
 boss = None
 boss_spawn_threshold = 100
+boss_1_defeated = False
+boss_2_defeated = False
 reflectable_projectiles = []
 score = 0
 
@@ -116,7 +119,10 @@ def reset_game():
     enemies = []
     enemy_bullets = []
     side_turrets = []
+    horizontal_turrets = []
     boss = None
+    boss_1_defeated = False
+    boss_2_defeated = False
     reflectable_projectiles = []
     swarm_minions = []
     grabbers = []
@@ -456,6 +462,15 @@ while running:
             turret_color = ORANGE
             if turret.get('warning_timer', 0) > 0:
                 # Flash red every 3 frames
+                if (turret['warning_timer'] // 3) % 2 == 0:
+                    turret_color = RED
+            pygame.draw.rect(screen, turret_color, (turret['x'], turret['y'], enemy_width, enemy_height))
+
+        # Draw horizontal turrets
+        for turret in horizontal_turrets[:]:
+            turret_color = CYAN
+            if turret.get('warning_timer', 0) > 0:
+                # Flash red during warning
                 if (turret['warning_timer'] // 3) % 2 == 0:
                     turret_color = RED
             pygame.draw.rect(screen, turret_color, (turret['x'], turret['y'], enemy_width, enemy_height))
@@ -1001,49 +1016,77 @@ while running:
                 elif score < 150:
                     enemy_type = random.choice(['sine', 'zigzag', 'straight'])
                 elif score < 200:
-                    enemy_type = random.choice(['sine', 'zigzag', 'shooter', 'straight'])
-                else:  # score >= 200
-                    enemy_type = random.choice(['sine', 'zigzag', 'shooter', 'straight'])
-
-                # Calculate vx based on score for slightly more variation
-                vx_scale = 1.5 + (min(score, 200) / 200) * 0.5
-                new_enemy = {
-                    'x': enemy_x,
-                    'y': 0,
-                    'base_x': enemy_x,
-                    'type': enemy_type,
-                    'vx': random.choice([-1, 1]) * vx_scale,
-                    'amplitude': chosen_amplitude,
-                    'spawn_frame': frame_count,
-                    'shoot_cooldown': 0,
-                    'warning_timer': 0
-                }
-                if enemy_type == 'shooter':
-                    # Shooter cooldown: shorter as score increases
-                    if score < 150:
-                        base_cooldown = 50  # Reduced from 80
-                    elif score < 200:
-                        base_cooldown = 40  # Reduced from 60
+                    # Side turrets available after first boss
+                    if boss_1_defeated:
+                        enemy_type = random.choice(['sine', 'zigzag', 'shooter', 'straight', 'side_turret'])
                     else:
-                        base_cooldown = 30  # Reduced from 45
-                    new_enemy['shoot_cooldown'] = random.randint(base_cooldown, base_cooldown + 30)  # Reduced range
-                enemies.append(new_enemy)
+                        enemy_type = random.choice(['sine', 'zigzag', 'shooter', 'straight'])
+                else:  # score >= 200
+                    # Horizontal turrets available after second boss
+                    if boss_2_defeated:
+                        enemy_type = random.choice(['sine', 'zigzag', 'shooter', 'straight', 'side_turret', 'side_turret', 'horizontal_turret'])
+                    elif boss_1_defeated:
+                        enemy_type = random.choice(['sine', 'zigzag', 'shooter', 'straight', 'side_turret', 'side_turret'])
+                    else:
+                        enemy_type = random.choice(['sine', 'zigzag', 'shooter', 'straight'])
 
-            # Spawn side turrets (after score 50)
-            if score >= 50 and frame_count % 300 == 0:  # Spawn every 5 seconds
-                if len(side_turrets) < 4:  # Max 4 turrets at once
-                    side = random.choice(['left', 'right'])
-                    turret_x = 10 if side == 'left' else SCREEN_WIDTH - enemy_width - 10
-                    turret_y = random.randint(50, SCREEN_HEIGHT - enemy_height - 50)
-                    side_turrets.append({
-                        'x': turret_x,
-                        'y': turret_y,
-                        'vy': random.choice([-2, 2]),  # Move up or down
-                        'side': side,
-                        'shoot_cooldown': random.randint(60, 100),
-                        'warning_timer': 0,
-                        'hp': 3  # Takes 3 hits to destroy
-                    })
+                # Handle side turret spawning separately (edge-based)
+                if enemy_type == 'side_turret':
+                    if len(side_turrets) < 4:  # Max 4 turrets at once
+                        side = random.choice(['left', 'right'])
+                        turret_x = 10 if side == 'left' else SCREEN_WIDTH - enemy_width - 10
+                        turret_y = random.randint(50, SCREEN_HEIGHT - enemy_height - 50)
+                        side_turrets.append({
+                            'x': turret_x,
+                            'y': turret_y,
+                            'vy': random.choice([-2, 2]),
+                            'side': side,
+                            'shoot_cooldown': random.randint(60, 100),
+                            'warning_timer': 0,
+                            'hp': 1
+                        })
+                # Handle horizontal turret spawning (top/bottom edges)
+                elif enemy_type == 'horizontal_turret':
+                    if len(horizontal_turrets) < 4:  # Max 4 turrets at once
+                        edge = random.choice(['top', 'bottom'])
+                        turret_x = random.randint(50, SCREEN_WIDTH - enemy_width - 50)
+                        turret_y = 10 if edge == 'top' else SCREEN_HEIGHT - enemy_height - 10
+                        horizontal_turrets.append({
+                            'x': turret_x,
+                            'y': turret_y,
+                            'vx': random.choice([-2, 2]),
+                            'edge': edge,
+                            'shoot_cooldown': random.randint(60, 100),
+                            'warning_timer': 0,
+                            'hp': 1
+                        })
+                else:
+                    # Calculate vx based on score for slightly more variation
+                    vx_scale = 1.5 + (min(score, 200) / 200) * 0.5
+                    new_enemy = {
+                        'x': enemy_x,
+                        'y': 0,
+                        'base_x': enemy_x,
+                        'type': enemy_type,
+                        'vx': random.choice([-1, 1]) * vx_scale,
+                        'amplitude': chosen_amplitude,
+                        'spawn_frame': frame_count,
+                        'shoot_cooldown': 0,
+                        'warning_timer': 0
+                    }
+                    if enemy_type == 'shooter':
+                        # Shooter cooldown: shorter as score increases
+                        if score < 150:
+                            base_cooldown = 50  # Reduced from 80
+                        elif score < 200:
+                            base_cooldown = 40  # Reduced from 60
+                        else:
+                            base_cooldown = 30  # Reduced from 45
+                        new_enemy['shoot_cooldown'] = random.randint(base_cooldown, base_cooldown + 30)  # Reduced range
+                    enemies.append(new_enemy)
+
+            # Side turrets now spawn through enemy type selection system (score 100+ after boss 1)
+            # Horizontal turrets spawn at score 200+ after boss 2
 
             # Update side turrets
             for turret in side_turrets[:]:
@@ -1052,6 +1095,39 @@ while running:
                 if turret['y'] <= 0 or turret['y'] >= SCREEN_HEIGHT - enemy_height:
                     turret['vy'] *= -1
                     turret['y'] = max(0, min(turret['y'], SCREEN_HEIGHT - enemy_height))
+                
+                # Shooting logic
+                turret['shoot_cooldown'] -= 1
+                warning_duration = 6
+                
+                if turret['shoot_cooldown'] <= warning_duration and turret.get('warning_timer', 0) == 0:
+                    turret['warning_timer'] = warning_duration
+                
+                if turret.get('warning_timer', 0) > 0:
+                    turret['warning_timer'] -= 1
+                    if turret['warning_timer'] <= 0 and turret['shoot_cooldown'] <= 0:
+                        # Shoot at player
+                        turret_center_x = turret['x'] + enemy_width // 2
+                        turret_center_y = turret['y'] + enemy_height // 2
+                        player_center_x = player_x + player_width // 2
+                        player_center_y = player_y + player_height // 2
+                        dx = player_center_x - turret_center_x
+                        dy = player_center_y - turret_center_y
+                        dist = math.hypot(dx, dy)
+                        if dist > 0:
+                            vx = (dx / dist) * 6
+                            vy = (dy / dist) * 6
+                            enemy_bullets.append([turret_center_x, turret_center_y, vx, vy])
+                        turret['shoot_cooldown'] = random.randint(60, 100)
+                        turret['warning_timer'] = 0
+
+            # Update horizontal turrets
+            for turret in horizontal_turrets[:]:
+                # Move left and right, bounce at screen edges
+                turret['x'] += turret['vx']
+                if turret['x'] <= 0 or turret['x'] >= SCREEN_WIDTH - enemy_width:
+                    turret['vx'] *= -1
+                    turret['x'] = max(0, min(turret['x'], SCREEN_WIDTH - enemy_width))
                 
                 # Shooting logic
                 turret['shoot_cooldown'] -= 1
@@ -1455,6 +1531,11 @@ while running:
                         reflectable_projectiles.remove(proj)
                         boss['hp'] -= 2  # Reflected projectiles do more damage
                         if boss['hp'] <= 0:
+                            # Track which boss was defeated
+                            if boss_spawn_threshold == 200:
+                                boss_1_defeated = True
+                            elif boss_spawn_threshold == 300:
+                                boss_2_defeated = True
                             boss = None
                             reflectable_projectiles.clear()
                             swarm_minions.clear()
@@ -1465,6 +1546,7 @@ while running:
                             active_lasers.clear()
                             path_hazards.clear()
                             side_turrets.clear()
+                            horizontal_turrets.clear()
                             # Trigger hyperdrive cutscene
                             hyperdrive_active = True
                             hyperdrive_timer = 0
@@ -1487,6 +1569,11 @@ while running:
                             dmg = 1
                         boss['hp'] -= dmg
                         if boss['hp'] <= 0:
+                            # Track which boss was defeated
+                            if boss_spawn_threshold == 200:
+                                boss_1_defeated = True
+                            elif boss_spawn_threshold == 300:
+                                boss_2_defeated = True
                             boss = None
                             swarm_minions.clear()
                             grabbers.clear()
@@ -1496,6 +1583,7 @@ while running:
                             active_lasers.clear()
                             path_hazards.clear()
                             side_turrets.clear()
+                            horizontal_turrets.clear()
                             # Trigger hyperdrive cutscene
                             hyperdrive_active = True
                             hyperdrive_timer = 0
@@ -1527,6 +1615,20 @@ while running:
                             score += 5  # Worth more points
                         break
 
+            # Check bullet-horizontal turret collisions
+            for bullet in bullets[:]:
+                for turret in horizontal_turrets[:]:
+                    if (bullet[0] < turret['x'] + enemy_width and
+                        bullet[0] + bullet_width > turret['x'] and
+                        bullet[1] < turret['y'] + enemy_height and
+                        bullet[1] + bullet_height > turret['y']):
+                        bullets.remove(bullet)
+                        turret['hp'] -= 1
+                        if turret['hp'] <= 0:
+                            horizontal_turrets.remove(turret)
+                            score += 5  # Worth more points
+                        break
+
             # Check player-enemy collisions
             if not invincible and not debug_invincible and not hyperdrive_active:
                 for enemy in enemies[:]:
@@ -1545,6 +1647,20 @@ while running:
                 
                 # Check collision with side turrets
                 for turret in side_turrets[:]:
+                    if (player_x < turret['x'] + enemy_width and
+                        player_x + player_width > turret['x'] and
+                        player_y < turret['y'] + enemy_height and
+                        player_y + player_height > turret['y']):
+                        player_hp -= 1
+                        if player_hp <= 0:
+                            game_state = 'game_over'
+                        else:
+                            invincible = True
+                            invincible_timer = invincible_duration
+                        break
+                
+                # Check collision with horizontal turrets
+                for turret in horizontal_turrets[:]:
                     if (player_x < turret['x'] + enemy_width and
                         player_x + player_width > turret['x'] and
                         player_y < turret['y'] + enemy_height and
