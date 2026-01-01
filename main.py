@@ -599,44 +599,46 @@ while running:
                         fuse = max(60, 110 - boss['stage'] * 12)
                         exploding_bullets.append({'x': boss_x, 'y': boss_y, 'vx': vx, 'vy': vy, 'fuse': fuse, 'max_fuse': fuse})
 
-                    # 4: Telegraph lasers
-                    elif boss['attack_pattern'] == 4 and boss['attack_timer'] % 70 == 0:
-                        # Aim laser at player and extend to screen edges
-                        px = player_x + player_width // 2
-                        py = player_y + player_height // 2
-                        dx = px - boss_x
-                        dy = py - boss_y
-                        if dx == 0 and dy == 0:
-                            dx = 1
-                        intersections = []
-                        # vertical edges
-                        if dx != 0:
-                            t_left = (0 - boss_x) / dx
-                            y_left = boss_y + t_left * dy
-                            if 0 <= y_left <= SCREEN_HEIGHT:
-                                intersections.append((t_left, 0, y_left))
-                            t_right = (SCREEN_WIDTH - boss_x) / dx
-                            y_right = boss_y + t_right * dy
-                            if 0 <= y_right <= SCREEN_HEIGHT:
-                                intersections.append((t_right, SCREEN_WIDTH, y_right))
-                        # horizontal edges
-                        if dy != 0:
-                            t_top = (0 - boss_y) / dy
-                            x_top = boss_x + t_top * dx
-                            if 0 <= x_top <= SCREEN_WIDTH:
-                                intersections.append((t_top, x_top, 0))
-                            t_bottom = (SCREEN_HEIGHT - boss_y) / dy
-                            x_bottom = boss_x + t_bottom * dx
-                            if 0 <= x_bottom <= SCREEN_WIDTH:
-                                intersections.append((t_bottom, x_bottom, SCREEN_HEIGHT))
-                        if len(intersections) >= 2:
-                            intersections.sort(key=lambda v: v[0])
-                            start = (intersections[0][1], intersections[0][2])
-                            end = (intersections[-1][1], intersections[-1][2])
-                        else:
-                            start = (boss_x, boss_y)
-                            end = (px, py)
-                        laser_warnings.append({'start': start, 'end': end, 'charge': 60})
+                    # 4: Telegraph lasers (spawn 2-3 at once)
+                    elif boss['attack_pattern'] == 4 and boss['attack_timer'] % 55 == 0:
+                        num_lasers = random.randint(2, 3)
+                        for _ in range(num_lasers):
+                            # Aim laser at player with slight variation
+                            px = player_x + player_width // 2 + random.randint(-80, 80)
+                            py = player_y + player_height // 2 + random.randint(-60, 60)
+                            dx = px - boss_x
+                            dy = py - boss_y
+                            if dx == 0 and dy == 0:
+                                dx = 1
+                            intersections = []
+                            # vertical edges
+                            if dx != 0:
+                                t_left = (0 - boss_x) / dx
+                                y_left = boss_y + t_left * dy
+                                if 0 <= y_left <= SCREEN_HEIGHT:
+                                    intersections.append((t_left, 0, y_left))
+                                t_right = (SCREEN_WIDTH - boss_x) / dx
+                                y_right = boss_y + t_right * dy
+                                if 0 <= y_right <= SCREEN_HEIGHT:
+                                    intersections.append((t_right, SCREEN_WIDTH, y_right))
+                            # horizontal edges
+                            if dy != 0:
+                                t_top = (0 - boss_y) / dy
+                                x_top = boss_x + t_top * dx
+                                if 0 <= x_top <= SCREEN_WIDTH:
+                                    intersections.append((t_top, x_top, 0))
+                                t_bottom = (SCREEN_HEIGHT - boss_y) / dy
+                                x_bottom = boss_x + t_bottom * dx
+                                if 0 <= x_bottom <= SCREEN_WIDTH:
+                                    intersections.append((t_bottom, x_bottom, SCREEN_HEIGHT))
+                            if len(intersections) >= 2:
+                                intersections.sort(key=lambda v: v[0])
+                                start = (intersections[0][1], intersections[0][2])
+                                end = (intersections[-1][1], intersections[-1][2])
+                            else:
+                                start = (boss_x, boss_y)
+                                end = (px, py)
+                            laser_warnings.append({'start': start, 'end': end, 'charge': 60})
 
                     # 5: Winding path hazard (stage 4 only)
                     elif boss['attack_pattern'] == 5 and boss['stage'] >= 4 and boss['attack_timer'] % 150 == 0:
