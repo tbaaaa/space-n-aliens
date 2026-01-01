@@ -679,24 +679,19 @@ while running:
                                 end = (px, py)
                             laser_warnings.append({'start': start, 'end': end, 'charge': 60})
 
-                    # 5: Streaming bullet corridor (stage 4 only)
+                    # 5: Streaming bullet corridor minigame (stage 4 only)
                     elif boss['attack_pattern'] == 5 and boss['stage'] >= 4 and boss['attack_timer'] % 150 == 0:
-                        # Start corridor attack - boss will shoot bullets from left and right
-                        boss_center_x = boss['x'] + boss['width'] // 2
-                        boss_center_y = boss['y'] + boss['height'] // 2
-                        
-                        # Create two bullet streams (left and right guns)
-                        path_gap = 140  # Gap between the two streams for player to navigate
-                        
+                        # Start corridor attack - bullets spawn from screen edges and converge inward
+                        # Following the boss's winding path
                         path_hazards.append({
-                            'left_gun_x': boss_center_x - path_gap // 2,
-                            'right_gun_x': boss_center_x + path_gap // 2,
                             'bullets': [],
-                            'duration': 240,
+                            'duration': 240,  # How long to spawn new bullets
                             'spawn_interval': 5,
                             'spawn_timer': 0,
-                            'bullet_speed': 4,
-                            'gap': path_gap
+                            'bullet_speed': 3,
+                            'converge_speed': 0.15,  # How fast bullets move inward
+                            'active': True,
+                            'elapsed_time': 0  # Track total time for convergence
                         })
                         boss['corridor_active'] = True
 
@@ -1097,41 +1092,76 @@ while running:
 
             # Update path hazards
             for path in path_hazards[:]:
-                path['duration'] -= 1
-                path['spawn_timer'] += 1
+                path['elapsed_time'] += 1
                 
-                # Spawn new bullets from boss position
-                if path['spawn_timer'] % path['spawn_interval'] == 0 and boss:
-                    boss_y = boss['y'] + boss['height'] // 2
-                    # Left stream
-                    path['bullets'].append({
-                        'x': path['left_gun_x'],
-                        'y': boss_y,
-                        'side': 'left'
-                    })
-                    # Right stream
-                    path['bullets'].append({
-                        'x': path['right_gun_x'],
-                        'y': boss_y,
-                        'side': 'right'
-                    })
+                # Only spawn new bullets while duration is active
+                if path['duration'] > 0:
+                    path['duration'] -= 1
+                    path['spawn_timer'] += 1
+                    
+                    # Spawn new bullets from screen edges, following boss position
+                    if path['spawn_timer'] % path['spawn_interval'] == 0 and boss:
+                        boss_center_x = boss['x'] + boss['width'] // 2
+                        boss_y = boss['y'] + boss['height'] // 2
+                        
+                        # Calculate how much the bullets have converged inward
+                        converge_amount = path['elapsed_time'] * path['converge_speed']
+                        
+                        # Left bullet spawns from left edge, converging right toward boss
+                        left_x = 0 + converge_amount
+                        # Right bullet spawns from right edge, converging left toward boss
+                        right_x = SCREEN_WIDTH - converge_amount
+                        
+                        # Add some horizontal offset based on boss position for winding effect
+                        offset_from_center = boss_center_x - SCREEN_WIDTH // 2
+                        winding_factor = 0.5  # How much the path follows the boss
+                        
+                        path['bullets'].append({
+                            'x': left_x + offset_from_center * winding_factor,
+                            'y': boss_y,
+                            'side': 'left',
+                            'target_converge': converge_amount
+                        })
+                        path['bullets'].append({
+                            'x': right_x + offset_from_center * winding_factor,
+                            'y': boss_y,
+                            'side': 'right',
+                            'target_converge': converge_amount
+                        })
+                else:
+                    # Attack duration finished, but keep updating existing bullets
+                    if boss:
+                        boss['corridor_active'] = False
                 
-                # Move bullets downward
+                # Move bullets downward and converge inward
                 for bullet in path['bullets'][:]:
                     bullet['y'] += path['bullet_speed']
+                    
+                    # Continue converging inward based on side
+                    if bullet['side'] == 'left':
+                        bullet['x'] += path['converge_speed'] * 0.3  # Slight inward drift
+                    else:  # right side
+                        bullet['x'] -= path['converge_speed'] * 0.3
+                    
                     # Remove bullets that go off screen
-                    if bullet['y'] > SCREEN_HEIGHT:
+                    if bullet['y'] > SCREEN_HEIGHT + 20:
                         path['bullets'].remove(bullet)
                 
-                # Check if player is hit by bullets or outside the corridor
+                # Check if player touches the corridor walls
                 px = player_x + player_width // 2
                 py = player_y + player_height // 2
                 
-                # Check collision with corridor bullets
-                for bullet in path['bullets']:
-                    if abs(bullet['y'] - py) < 50:  # Check bullets near player height
-                        dist = abs(bullet['x'] - px)
-                        if dist < 10:  # Hit by a corridor bullet
+                # Find bullets at similar Y level to player
+                nearby_bullets = [b for b in path['bullets'] if abs(b['y'] - py) < 30]
+                
+                if nearby_bullets:
+                    # Separate left and right bullets
+                    left_bullets = [b for b in nearby_bullets if b['side'] == 'left']
+                    right_bullets = [b for b in nearby_bullets if b['side'] == 'right']
+                    
+                    # Check collision with left wall
+                    for lb in left_bullets:
+                        if abs(lb['x'] - px) < 15:  # Player hit left wall
                             if not invincible and not debug_invincible:
                                 player_hp -= 1
                                 if player_hp <= 0:
@@ -1139,15 +1169,31 @@ while running:
                                 else:
                                     invincible = True
                                     invincible_timer = invincible_duration
+                            # Clear the hazard
+                            path_hazards.clear()
+                            if boss:
+                                boss['corridor_active'] = False
+                            break
+                    
+                    # Check collision with right wall
+                    for rb in right_bullets:
+                        if abs(rb['x'] - px) < 15:  # Player hit right wall
+                            if not invincible and not debug_invincible:
+                                player_hp -= 1
+                                if player_hp <= 0:
+                                    game_state = 'game_over'
+                                else:
+                                    invincible = True
+                                    invincible_timer = invincible_duration
+                            # Clear the hazard
                             path_hazards.clear()
                             if boss:
                                 boss['corridor_active'] = False
                             break
                 
-                if path['duration'] <= 0:
+                # Remove path only when all bullets are gone
+                if path['duration'] <= 0 and len(path['bullets']) == 0:
                     path_hazards.remove(path)
-                    if boss:
-                        boss['corridor_active'] = False
 
             # Update enemy bullets
             for eb in enemy_bullets[:]:
