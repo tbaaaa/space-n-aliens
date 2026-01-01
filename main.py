@@ -689,7 +689,7 @@ while running:
                             'spawn_interval': 5,
                             'spawn_timer': 0,
                             'bullet_speed': 3,
-                            'converge_speed': 0.35,  # How fast bullets move inward
+                            'converge_speed': 1.0,  # How fast bullets move inward
                             'active': True,
                             'elapsed_time': 0  # Track total time for convergence
                         })
