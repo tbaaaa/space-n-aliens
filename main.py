@@ -566,7 +566,7 @@ while running:
                     elif boss['attack_pattern'] == 1 and boss['attack_timer'] % 140 == 0:
                         sx = boss_x + random.randint(-50, 50)
                         sy = boss_y
-                        grabbers.append({'x': sx, 'y': sy, 'vx': 0, 'vy': 2.5 + boss['stage'] * 0.4, 'attached': False})
+                        grabbers.append({'x': sx, 'y': sy, 'vx': 0, 'vy': 2.5 + boss['stage'] * 0.4, 'attached': False, 'life': 220})
 
                     # 2: Multiplying bouncing bullets
                     elif boss['attack_pattern'] == 2 and boss['attack_timer'] % 30 == 0:
@@ -590,7 +590,7 @@ while running:
                         exploding_bullets.append({'x': boss_x, 'y': boss_y, 'vx': vx, 'vy': vy, 'fuse': fuse, 'max_fuse': fuse})
 
                     # 4: Telegraph lasers
-                    elif boss['attack_pattern'] == 4 and boss['attack_timer'] % 160 == 0:
+                    elif boss['attack_pattern'] == 4 and boss['attack_timer'] % 120 == 0:
                         orientation = random.choice(['vertical', 'diagonal'])
                         if orientation == 'vertical':
                             x_pos = random.randint(80, SCREEN_WIDTH - 80)
@@ -891,6 +891,13 @@ while running:
 
             # Update grabbers
             for g in grabbers[:]:
+                g['life'] -= 1
+                if g['life'] <= 0:
+                    if g.get('attached', False):
+                        grabbed = False
+                        grab_escape_meter = 0
+                    grabbers.remove(g)
+                    continue
                 if g.get('attached', False):
                     g['x'] = player_x + player_width // 2
                     g['y'] = player_y - 10
