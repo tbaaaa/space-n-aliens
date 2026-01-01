@@ -460,6 +460,13 @@ while running:
                 if eb[0] < -10 or eb[0] > SCREEN_WIDTH + 10 or eb[1] < -10 or eb[1] > SCREEN_HEIGHT + 10:
                     enemy_bullets.remove(eb)
 
+            # Update player bullets
+            for bullet in bullets[:]:
+                bullet[0] += bullet[2]
+                bullet[1] += bullet[3]
+                if bullet[0] < -bullet_width or bullet[0] > SCREEN_WIDTH or bullet[1] < -bullet_height or bullet[1] > SCREEN_HEIGHT:
+                    bullets.remove(bullet)
+
             # Check bullet-enemy collisions
             for bullet in bullets[:]:
                 for enemy in enemies[:]:
