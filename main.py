@@ -420,10 +420,10 @@ while running:
         for al in active_lasers[:]:
             pygame.draw.line(screen, RED, al['start'], al['end'], 16)
 
-        # Draw path hazards (safe corridors in DARK_PURPLE outline)
+        # Draw path hazards (bullet corridor boundaries)
         for path in path_hazards[:]:
-            for rect in path['rects']:
-                pygame.draw.rect(screen, (40, 0, 60), rect, 3)
+            for bullet in path['bullets']:
+                pygame.draw.circle(screen, (255, 100, 100), (int(bullet['x']), int(bullet['y'])), 4)
 
         # Update game state (only when playing)
         if game_state == 'playing':
@@ -545,7 +545,9 @@ while running:
                         select_every = 75
 
                     if boss['attack_timer'] % select_every == 0:
-                        boss['attack_pattern'] = random.choice(pattern_pool)
+                        # Don't switch patterns if corridor is active
+                        if not boss.get('corridor_active', False):
+                            boss['attack_pattern'] = random.choice(pattern_pool)
 
                     boss_x = boss['x'] + boss['width'] // 2
                     boss_y = boss['y'] + boss['height'] // 2
@@ -573,10 +575,12 @@ while running:
                             swarm_minions.append({'x': sx, 'y': sy, 'vx': vx, 'vy': vy})
 
                     # 1: Grabber minion
-                    elif boss['attack_pattern'] == 1 and boss['attack_timer'] % 140 == 0:
-                        sx = boss_x + random.randint(-50, 50)
-                        sy = boss_y
-                        grabbers.append({'x': sx, 'y': sy, 'vx': 0, 'vy': 2.5 + boss['stage'] * 0.4, 'attached': False, 'life': 220})
+                    elif boss['attack_pattern'] == 1:
+                        interval = 140 if boss['stage'] <= 1 else 100
+                        if boss['attack_timer'] % interval == 0:
+                            sx = boss_x + random.randint(-50, 50)
+                            sy = boss_y
+                            grabbers.append({'x': sx, 'y': sy, 'vx': 0, 'vy': 2.5 + boss['stage'] * 0.4, 'attached': False, 'life': 220})
 
                     # 2: Multiplying bouncing bullets
                     elif boss['attack_pattern'] == 2 and boss['attack_timer'] % 30 == 0:
@@ -589,15 +593,17 @@ while running:
                         multiplying_bullets.append({'x': boss_x, 'y': boss_y, 'vx': vx, 'vy': vy, 'bounces': 0, 'split_count': 0})
 
                     # 3: Exploding delayed shots
-                    elif boss['attack_pattern'] == 3 and boss['attack_timer'] % 35 == 0:
-                        dx = player_x + player_width // 2 - boss_x
-                        dy = player_y + player_height // 2 - boss_y
-                        dist = math.hypot(dx, dy) or 1
-                        speed = 4.8 + boss['stage'] * 0.45
-                        vx = (dx / dist) * speed
-                        vy = (dy / dist) * speed
-                        fuse = max(60, 110 - boss['stage'] * 12)
-                        exploding_bullets.append({'x': boss_x, 'y': boss_y, 'vx': vx, 'vy': vy, 'fuse': fuse, 'max_fuse': fuse})
+                    elif boss['attack_pattern'] == 3:
+                        interval = 35 if boss['stage'] <= 1 else 25
+                        if boss['attack_timer'] % interval == 0:
+                            dx = player_x + player_width // 2 - boss_x
+                            dy = player_y + player_height // 2 - boss_y
+                            dist = math.hypot(dx, dy) or 1
+                            speed = 4.8 + boss['stage'] * 0.45
+                            vx = (dx / dist) * speed
+                            vy = (dy / dist) * speed
+                            fuse = max(60, 110 - boss['stage'] * 12)
+                            exploding_bullets.append({'x': boss_x, 'y': boss_y, 'vx': vx, 'vy': vy, 'fuse': fuse, 'max_fuse': fuse})
 
                     # 4: Telegraph lasers (spawn 2-3 at once)
                     elif boss['attack_pattern'] == 4 and boss['attack_timer'] % 55 == 0:
@@ -640,18 +646,36 @@ while running:
                                 end = (px, py)
                             laser_warnings.append({'start': start, 'end': end, 'charge': 60})
 
-                    # 5: Winding path hazard (stage 4 only)
+                    # 5: Winding bullet path (stage 4 only)
                     elif boss['attack_pattern'] == 5 and boss['stage'] >= 4 and boss['attack_timer'] % 150 == 0:
-                        segment_height = SCREEN_HEIGHT // 6
-                        corridor_width = 220
-                        x_center = random.randint(corridor_width, SCREEN_WIDTH - corridor_width)
-                        new_rects = []
-                        for i in range(6):
-                            x_center += random.randint(-120, 120)
-                            x_center = max(corridor_width, min(x_center, SCREEN_WIDTH - corridor_width))
-                            rect = pygame.Rect(x_center - corridor_width // 2, i * segment_height, corridor_width, segment_height)
-                            new_rects.append(rect)
-                        path_hazards.append({'rects': new_rects, 'duration': 140})
+                        # Create winding path with bullet markers
+                        path_width = 180
+                        num_segments = 8
+                        segment_height = SCREEN_HEIGHT // num_segments
+                        x_center = SCREEN_WIDTH // 2
+                        path_bullets = []
+                        
+                        for i in range(num_segments + 1):
+                            y = i * segment_height
+                            # Add random wandering
+                            x_center += random.randint(-100, 100)
+                            x_center = max(path_width, min(x_center, SCREEN_WIDTH - path_width))
+                            
+                            # Create left and right boundary bullets
+                            for x_offset in [-path_width // 2, path_width // 2]:
+                                for spacing in range(0, 60, 20):
+                                    path_bullets.append({
+                                        'x': x_center + x_offset,
+                                        'y': y + spacing
+                                    })
+                        
+                        path_hazards.append({
+                            'bullets': path_bullets,
+                            'duration': 180,
+                            'width': path_width,
+                            'active': True
+                        })
+                        boss['corridor_active'] = True
 
                 elif boss.get('type') == 'star':
                     # Star boss - shoots reflectable spinning squares and fast bullets
@@ -1051,22 +1075,41 @@ while running:
             # Update path hazards
             for path in path_hazards[:]:
                 path['duration'] -= 1
-                # Check player inside corridor union
+                # Check if player is within the bullet corridor
                 px = player_x + player_width // 2
                 py = player_y + player_height // 2
-                inside = any(rect.collidepoint(px, py) for rect in path['rects'])
-                if not inside:
-                    if not invincible:
-                        player_hp -= 1
-                        if player_hp <= 0:
-                            game_state = 'game_over'
-                        else:
-                            invincible = True
-                            invincible_timer = invincible_duration
-                    path_hazards.clear()
-                    break
+                
+                # Find closest segments above and below player
+                relevant_bullets = [b for b in path['bullets'] if abs(b['y'] - py) < 100]
+                if relevant_bullets:
+                    # Get average x position of nearby boundary bullets
+                    left_bullets = [b for b in relevant_bullets if b['x'] < px]
+                    right_bullets = [b for b in relevant_bullets if b['x'] > px]
+                    
+                    if left_bullets and right_bullets:
+                        left_bound = max(b['x'] for b in left_bullets)
+                        right_bound = min(b['x'] for b in right_bullets)
+                        inside = left_bound <= px <= right_bound
+                    else:
+                        inside = False
+                    
+                    if not inside:
+                        if not invincible:
+                            player_hp -= 1
+                            if player_hp <= 0:
+                                game_state = 'game_over'
+                            else:
+                                invincible = True
+                                invincible_timer = invincible_duration
+                        path_hazards.clear()
+                        if boss:
+                            boss['corridor_active'] = False
+                        break
+                
                 if path['duration'] <= 0:
                     path_hazards.remove(path)
+                    if boss:
+                        boss['corridor_active'] = False
 
             # Update enemy bullets
             for eb in enemy_bullets[:]:
@@ -1123,7 +1166,7 @@ while running:
                         break
 
             # Check bullet-boss collisions (only when vulnerable, damage varies by boss type)
-            if boss and boss.get('vulnerable', False):
+            if boss and boss.get('vulnerable', False) and not boss.get('corridor_active', False):
                 for bullet in bullets[:]:
                     if (bullet[0] < boss['x'] + boss['width'] and
                         bullet[0] + bullet_width > boss['x'] and
