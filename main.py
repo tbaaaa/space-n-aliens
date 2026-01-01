@@ -46,7 +46,7 @@ enemy_width = 50
 enemy_height = 50
 enemy_speed = 2
 enemies = []
-enemy_spawn_rate = 60  # frames
+enemy_spawn_rate = 55  # frames
 enemy_bullets = []
 
 # Score
@@ -269,14 +269,16 @@ while running:
                 enemy['y'] += current_enemy_speed
 
                 if enemy['type'] == 'shooter':
+                    warning_duration = 30
+                    enemy['shoot_cooldown'] -= 1
+
+                    # Start warning when cooldown is close to firing
+                    if enemy['shoot_cooldown'] <= warning_duration and enemy.get('warning_timer', 0) == 0:
+                        enemy['warning_timer'] = warning_duration
+
                     if enemy.get('warning_timer', 0) > 0:
                         enemy['warning_timer'] -= 1
-                    else:
-                        enemy['shoot_cooldown'] -= 1
-                        if enemy['shoot_cooldown'] <= 0:
-                            # Start warning phase
-                            enemy['warning_timer'] = 30  # Flash for 30 frames (~0.5 sec)
-                        elif enemy['shoot_cooldown'] < -1:  # After warning finishes
+                        if enemy['warning_timer'] <= 0 and enemy['shoot_cooldown'] <= 0:
                             player_center_x = player_x + player_width // 2
                             player_center_y = player_y + player_height // 2
                             enemy_center_x = enemy['x'] + enemy_width // 2
@@ -292,6 +294,23 @@ while running:
                             base_cooldown = max(45, 90 - difficulty_level * 8)
                             enemy['shoot_cooldown'] = random.randint(base_cooldown, base_cooldown + 40)
                             enemy['warning_timer'] = 0
+                    elif enemy['shoot_cooldown'] <= 0:
+                        # Failsafe: if warning was skipped, still fire
+                        player_center_x = player_x + player_width // 2
+                        player_center_y = player_y + player_height // 2
+                        enemy_center_x = enemy['x'] + enemy_width // 2
+                        enemy_center_y = enemy['y'] + enemy_height // 2
+                        dx = player_center_x - enemy_center_x
+                        dy = player_center_y - enemy_center_y
+                        dist = math.hypot(dx, dy)
+                        if dist == 0:
+                            dist = 1
+                        vx = (dx / dist) * current_enemy_bullet_speed
+                        vy = (dy / dist) * current_enemy_bullet_speed
+                        enemy_bullets.append([enemy_center_x, enemy_center_y, vx, vy])
+                        base_cooldown = max(45, 90 - difficulty_level * 8)
+                        enemy['shoot_cooldown'] = random.randint(base_cooldown, base_cooldown + 40)
+                        enemy['warning_timer'] = 0
 
                 if enemy['y'] > SCREEN_HEIGHT:
                     enemies.remove(enemy)
