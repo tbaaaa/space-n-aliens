@@ -36,6 +36,7 @@ player_hp = 3
 invincible = False
 invincible_timer = 0
 invincible_duration = 120  # frames (2 seconds at 60 FPS)
+debug_invincible = False  # DEBUG: Toggle with E key
 
 # Bullet
 bullet_width = 5
@@ -223,6 +224,16 @@ while running:
                 if grab_escape_meter >= grab_escape_target:
                     grabbed = False
                     grab_escape_meter = 0
+            
+            # DEBUG: Toggle invincibility with E key
+            if keys[pygame.K_e]:
+                if not hasattr(game_state, '_e_pressed'):
+                    game_state._e_pressed = True
+                    debug_invincible = not debug_invincible
+            else:
+                if hasattr(game_state, '_e_pressed'):
+                    game_state._e_pressed = False
+            
             mouse_pressed = pygame.mouse.get_pressed()
             if mouse_pressed[0] and frame_count % fire_interval == 0:  # LMB
                 mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -239,7 +250,8 @@ while running:
                     bullets.append([player_center_x - bullet_width // 2, player_center_y - bullet_height // 2, bullet_vx, bullet_vy])
 
         # Draw player (with flashing effect during invincibility)
-        if not invincible or (invincible_timer // 10) % 2 == 0:  # Flash every 10 frames
+        is_invincible = invincible or debug_invincible
+        if not is_invincible or (invincible_timer // 10) % 2 == 0:  # Flash every 10 frames
             # Choose color based on HP
             if player_hp == 3:
                 player_color = GREEN
@@ -940,7 +952,7 @@ while running:
                 if m['x'] < -40 or m['x'] > SCREEN_WIDTH + 40 or m['y'] > SCREEN_HEIGHT + 40:
                     swarm_minions.remove(m)
                     continue
-                if not invincible:
+                if not invincible and not debug_invincible:
                     if (player_x < m['x'] + 10 and player_x + player_width > m['x'] - 10 and
                         player_y < m['y'] + 25 and player_y + player_height > m['y'] - 5):
                         swarm_minions.remove(m)
@@ -972,7 +984,7 @@ while running:
                     speed = g['vy']
                     g['x'] += (dx / dist) * speed
                     g['y'] += (dy / dist) * speed
-                    if not invincible and (abs(g['x'] - (player_x + player_width // 2)) < 20 and abs(g['y'] - (player_y + player_height // 2)) < 20):
+                    if not invincible and not debug_invincible and (abs(g['x'] - (player_x + player_width // 2)) < 20 and abs(g['y'] - (player_y + player_height // 2)) < 20):
                         g['attached'] = True
                         grabbed = True
                         grab_escape_meter = 0
@@ -1020,7 +1032,7 @@ while running:
                     player_center = (player_x + player_width // 2, player_y + player_height // 2)
                     dist = math.hypot(player_center[0] - eb['x'], player_center[1] - eb['y'])
                     if dist < explosion_radius:
-                        player_hp -= 1 if not invincible else 0
+                        player_hp -= 1 if not (invincible or debug_invincible) else 0
                         if player_hp <= 0:
                             game_state = 'game_over'
                         else:
@@ -1047,7 +1059,7 @@ while running:
             for al in active_lasers[:]:
                 al['life'] -= 1
                 # Player hit check (line vs point simplified by distance to segment)
-                if not invincible:
+                if not invincible and not debug_invincible:
                     px = player_x + player_width // 2
                     py = player_y + player_height // 2
                     x1, y1 = al['start']
@@ -1094,7 +1106,7 @@ while running:
                         inside = False
                     
                     if not inside:
-                        if not invincible:
+                        if not invincible and not debug_invincible:
                             player_hp -= 1
                             if player_hp <= 0:
                                 game_state = 'game_over'
@@ -1206,7 +1218,7 @@ while running:
                         break
 
             # Check player-enemy collisions
-            if not invincible:
+            if not invincible and not debug_invincible:
                 for enemy in enemies[:]:
                     if (player_x < enemy['x'] + enemy_width and
                         player_x + player_width > enemy['x'] and
@@ -1222,7 +1234,7 @@ while running:
                         break
 
             # Check player hit by enemy bullets
-            if not invincible:
+            if not invincible and not debug_invincible:
                 for eb in enemy_bullets[:]:
                     if (player_x < eb[0] + 6 and
                         player_x + player_width > eb[0] - 6 and
@@ -1238,7 +1250,7 @@ while running:
                         break
 
             # Check player hit by multiplying bullets
-            if not invincible:
+            if not invincible and not debug_invincible:
                 for mb in multiplying_bullets[:]:
                     if (player_x < mb['x'] + 6 and
                         player_x + player_width > mb['x'] - 6 and
@@ -1254,7 +1266,7 @@ while running:
                         break
 
             # Check player hit by unreflected projectiles
-            if not invincible:
+            if not invincible and not debug_invincible:
                 for proj in reflectable_projectiles[:]:
                     if not proj['reflected']:
                         dist = math.hypot(player_x + player_width // 2 - proj['x'], player_y + player_height // 2 - proj['y'])
