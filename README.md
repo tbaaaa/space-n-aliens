@@ -1,6 +1,6 @@
 # Space N Aliens!
 
-Quick! The aliens invaded your galaxy. Fight back and take back your home! It won't be easy :)
+Quick! The aliens invaded your galaxy. Fight back and drive them out! It won't be easy :)
 
 ## Guide
 
