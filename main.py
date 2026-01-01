@@ -53,7 +53,7 @@ enemy_bullets = []
 
 # Boss
 boss = None
-boss_spawn_threshold = 100
+boss_spawn_threshold = 300
 reflectable_projectiles = []
 score = 290
 
@@ -69,7 +69,7 @@ path_hazards = []         # winding corridor hazards
 # Grab state
 grabbed = False
 grab_escape_meter = 0
-grab_escape_target = 25
+grab_escape_target = 18
 font = pygame.font.Font(None, 36)
 
 # Game state
@@ -94,8 +94,8 @@ def reset_game():
     laser_warnings = []
     active_lasers = []
     path_hazards = []
-    boss_spawn_threshold = 100
-    score = 190
+    boss_spawn_threshold = 300
+    score = 290
     frame_count = 0
     player_hp = 3
     invincible = False
@@ -214,7 +214,7 @@ while running:
                     player_y += current_player_speed
             else:
                 # Struggle mechanic when grabbed
-                grab_escape_meter = max(0, grab_escape_meter - 0.2)
+                grab_escape_meter = max(0, grab_escape_meter - 0.3)
                 if keys[pygame.K_a] or keys[pygame.K_d]:
                     grab_escape_meter += 1
                 grab_escape_meter = max(0, min(grab_escape_meter, grab_escape_target))
@@ -462,12 +462,12 @@ while running:
                         'y': 40,
                         'width': 180,
                         'height': 180,
-                        'hp': 240,
-                        'max_hp': 240,
+                        'hp': 180,
+                        'max_hp': 180,
                         'attack_timer': 0,
                         'attack_pattern': 0,
-                        'vx': random.choice([-1, 1]) * 3.2,
-                        'vy': random.choice([-1.4, 1.4]),
+                        'vx': random.choice([-1, 1]) * 2.6,
+                        'vy': random.choice([-1.1, 1.1]),
                         'vulnerability_timer': 0,
                         'vulnerable': True,  # always damageable, but very tanky
                         'stage': 1,
@@ -516,23 +516,23 @@ while running:
                         boss['stage'] = stage
                         boss['stage_change_timer'] = 0
                         # Slight speed ramp each transition
-                        boss['vx'] *= 1.15
-                        boss['vy'] *= 1.15
+                        boss['vx'] *= 1.10
+                        boss['vy'] *= 1.10
                     boss['stage_change_timer'] += 1
 
                     # Attack pattern selection cadence per stage
                     if boss['stage'] == 1:
                         pattern_pool = [0, 2]
-                        select_every = 110
+                        select_every = 130
                     elif boss['stage'] == 2:
                         pattern_pool = [0, 1, 3]
-                        select_every = 95
+                        select_every = 110
                     elif boss['stage'] == 3:
                         pattern_pool = [0, 1, 2, 3, 4]
-                        select_every = 80
+                        select_every = 90
                     else:
                         pattern_pool = [0, 1, 2, 3, 4, 5]
-                        select_every = 65
+                        select_every = 75
 
                     if boss['attack_timer'] % select_every == 0:
                         boss['attack_pattern'] = random.choice(pattern_pool)
@@ -542,8 +542,8 @@ while running:
 
                     # Pattern definitions
                     # 0: Swarm crash minions
-                    if boss['attack_pattern'] == 0 and boss['attack_timer'] % 35 == 0:
-                        for _ in range(2 + boss['stage']):
+                    if boss['attack_pattern'] == 0 and boss['attack_timer'] % 45 == 0:
+                        for _ in range(1 + boss['stage']):
                             spawn_edge = random.choice(['left', 'right', 'top'])
                             if spawn_edge == 'top':
                                 sx = random.randint(0, SCREEN_WIDTH)
@@ -557,40 +557,40 @@ while running:
                             dx = player_x + player_width // 2 - sx
                             dy = player_y + player_height // 2 - sy
                             dist = math.hypot(dx, dy) or 1
-                            speed = 3.5 + boss['stage'] * 0.6
+                            speed = 3.0 + boss['stage'] * 0.45
                             vx = (dx / dist) * speed
                             vy = (dy / dist) * speed
                             swarm_minions.append({'x': sx, 'y': sy, 'vx': vx, 'vy': vy})
 
                     # 1: Grabber minion
-                    elif boss['attack_pattern'] == 1 and boss['attack_timer'] % 120 == 0:
+                    elif boss['attack_pattern'] == 1 and boss['attack_timer'] % 140 == 0:
                         sx = boss_x + random.randint(-50, 50)
                         sy = boss_y
                         grabbers.append({'x': sx, 'y': sy, 'vx': 0, 'vy': 2.5 + boss['stage'] * 0.4, 'attached': False})
 
                     # 2: Multiplying bouncing bullets
-                    elif boss['attack_pattern'] == 2 and boss['attack_timer'] % 25 == 0:
+                    elif boss['attack_pattern'] == 2 and boss['attack_timer'] % 30 == 0:
                         dx = player_x + player_width // 2 - boss_x
                         dy = player_y + player_height // 2 - boss_y
                         dist = math.hypot(dx, dy) or 1
-                        speed = 6 + boss['stage'] * 0.7
+                        speed = 5 + boss['stage'] * 0.6
                         vx = (dx / dist) * speed
                         vy = (dy / dist) * speed
-                        multiplying_bullets.append({'x': boss_x, 'y': boss_y, 'vx': vx, 'vy': vy, 'split_timer': 45, 'bounces': 0, 'split_count': 0})
+                        multiplying_bullets.append({'x': boss_x, 'y': boss_y, 'vx': vx, 'vy': vy, 'split_timer': 55, 'bounces': 0, 'split_count': 0})
 
                     # 3: Exploding delayed shots
-                    elif boss['attack_pattern'] == 3 and boss['attack_timer'] % 40 == 0:
+                    elif boss['attack_pattern'] == 3 and boss['attack_timer'] % 50 == 0:
                         dx = player_x + player_width // 2 - boss_x
                         dy = player_y + player_height // 2 - boss_y
                         dist = math.hypot(dx, dy) or 1
-                        speed = 5.5 + boss['stage'] * 0.5
+                        speed = 4.8 + boss['stage'] * 0.45
                         vx = (dx / dist) * speed
                         vy = (dy / dist) * speed
-                        fuse = 90 - boss['stage'] * 10
+                        fuse = max(60, 110 - boss['stage'] * 12)
                         exploding_bullets.append({'x': boss_x, 'y': boss_y, 'vx': vx, 'vy': vy, 'fuse': fuse, 'max_fuse': fuse})
 
                     # 4: Telegraph lasers
-                    elif boss['attack_pattern'] == 4 and boss['attack_timer'] % 140 == 0:
+                    elif boss['attack_pattern'] == 4 and boss['attack_timer'] % 160 == 0:
                         orientation = random.choice(['vertical', 'diagonal'])
                         if orientation == 'vertical':
                             x_pos = random.randint(80, SCREEN_WIDTH - 80)
@@ -599,12 +599,12 @@ while running:
                         else:
                             start = (boss_x, boss_y)
                             end = (random.randint(0, SCREEN_WIDTH), SCREEN_HEIGHT)
-                        laser_warnings.append({'start': start, 'end': end, 'charge': 50})
+                        laser_warnings.append({'start': start, 'end': end, 'charge': 60})
 
                     # 5: Winding path hazard (stage 4 only)
-                    elif boss['attack_pattern'] == 5 and boss['stage'] >= 4 and boss['attack_timer'] % 200 == 0:
+                    elif boss['attack_pattern'] == 5 and boss['stage'] >= 4 and boss['attack_timer'] % 220 == 0:
                         segment_height = SCREEN_HEIGHT // 6
-                        corridor_width = 160
+                        corridor_width = 220
                         x_center = random.randint(corridor_width, SCREEN_WIDTH - corridor_width)
                         new_rects = []
                         for i in range(6):
@@ -612,7 +612,7 @@ while running:
                             x_center = max(corridor_width, min(x_center, SCREEN_WIDTH - corridor_width))
                             rect = pygame.Rect(x_center - corridor_width // 2, i * segment_height, corridor_width, segment_height)
                             new_rects.append(rect)
-                        path_hazards.append({'rects': new_rects, 'duration': 220})
+                        path_hazards.append({'rects': new_rects, 'duration': 140})
 
                 elif boss.get('type') == 'star':
                     # Star boss - shoots reflectable spinning squares and fast bullets
@@ -938,7 +938,7 @@ while running:
                         new_vx = b['vx'] * cos_a - b['vy'] * sin_a
                         new_vy = b['vx'] * sin_a + b['vy'] * cos_a
                         multiplying_bullets.append({'x': b['x'], 'y': b['y'], 'vx': new_vx, 'vy': new_vy, 'split_timer': b['split_timer'], 'bounces': b['bounces'], 'split_count': b['split_count']})
-                if b['bounces'] > 4:
+                if b['bounces'] > 3:
                     multiplying_bullets.remove(b)
 
             # Update exploding bullets
@@ -948,7 +948,7 @@ while running:
                 eb['fuse'] -= 1
                 if eb['fuse'] <= 0:
                     # Explosion check
-                    explosion_radius = 90
+                    explosion_radius = 70
                     player_center = (player_x + player_width // 2, player_y + player_height // 2)
                     dist = math.hypot(player_center[0] - eb['x'], player_center[1] - eb['y'])
                     if dist < explosion_radius:
@@ -967,7 +967,7 @@ while running:
             for lw in laser_warnings[:]:
                 lw['charge'] -= 1
                 if lw['charge'] <= 0:
-                    active_lasers.append({'start': lw['start'], 'end': lw['end'], 'life': 60})
+                    active_lasers.append({'start': lw['start'], 'end': lw['end'], 'life': 50})
                     laser_warnings.remove(lw)
             for al in active_lasers[:]:
                 al['life'] -= 1
@@ -1005,8 +1005,13 @@ while running:
                 py = player_y + player_height // 2
                 inside = any(rect.collidepoint(px, py) for rect in path['rects'])
                 if not inside:
-                    player_hp = 0
-                    game_state = 'game_over'
+                    if not invincible:
+                        player_hp -= 1
+                        if player_hp <= 0:
+                            game_state = 'game_over'
+                        else:
+                            invincible = True
+                            invincible_timer = invincible_duration
                     path_hazards.clear()
                     break
                 if path['duration'] <= 0:
