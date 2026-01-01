@@ -264,10 +264,12 @@ while running:
                     'max_hp': 30,
                     'attack_timer': 0,
                     'attack_pattern': 0,
+                    'vx': random.choice([-1, 1]) * 1.5,
+                    'vy': random.choice([-0.5, 0.5]),
                     'weak_spots': [
-                        {'x': SCREEN_WIDTH // 2 - 60 + 30, 'y': 50 + 30, 'radius': 10, 'highlighted': False},
-                        {'x': SCREEN_WIDTH // 2 - 60 + 90, 'y': 50 + 30, 'radius': 10, 'highlighted': False},
-                        {'x': SCREEN_WIDTH // 2 - 60 + 60, 'y': 50 + 90, 'radius': 10, 'highlighted': False}
+                        {'x_offset': 30, 'y_offset': 30, 'radius': 10, 'highlighted': False},
+                        {'x_offset': 90, 'y_offset': 30, 'radius': 10, 'highlighted': False},
+                        {'x_offset': 60, 'y_offset': 90, 'radius': 10, 'highlighted': False}
                     ],
                     'weak_spot_timer': 0
                 }
@@ -275,6 +277,23 @@ while running:
 
             # Update boss if active
             if boss:
+                # Move boss
+                boss['x'] += boss['vx']
+                boss['y'] += boss['vy']
+                
+                # Keep boss within bounds and bounce
+                if boss['x'] < 0 or boss['x'] > SCREEN_WIDTH - boss['width']:
+                    boss['vx'] *= -1
+                    boss['x'] = max(0, min(boss['x'], SCREEN_WIDTH - boss['width']))
+                if boss['y'] < 0 or boss['y'] > SCREEN_HEIGHT // 2:
+                    boss['vy'] *= -1
+                    boss['y'] = max(0, min(boss['y'], SCREEN_HEIGHT // 2))
+                
+                # Update weak spot positions based on boss position
+                for spot in boss['weak_spots']:
+                    spot['x'] = boss['x'] + spot['x_offset']
+                    spot['y'] = boss['y'] + spot['y_offset']
+                
                 boss['attack_timer'] += 1
                 boss['weak_spot_timer'] += 1
 
@@ -291,13 +310,19 @@ while running:
 
                 # Boss attack patterns
                 if boss['attack_timer'] % 40 == 0:
-                    boss['attack_pattern'] = random.randint(0, 2)
+                    boss['attack_pattern'] = random.randint(0, 1)
 
-                # Pattern 0: Spread shot
+                # Pattern 0: Spread shot aimed at player
                 if boss['attack_pattern'] == 0 and boss['attack_timer'] % 40 == 0:
                     boss_x = boss['x'] + boss['width'] // 2
                     boss_y = boss['y'] + boss['height']
-                    for angle in [270 - 20, 270, 270 + 20]:
+                    # Calculate angle to player
+                    dx = player_x + player_width // 2 - boss_x
+                    dy = player_y + player_height // 2 - boss_y
+                    base_angle = math.degrees(math.atan2(dy, dx))
+                    # Fire 3 shots in a spread around player direction
+                    for angle_offset in [-15, 0, 15]:
+                        angle = base_angle + angle_offset
                         rad = math.radians(angle)
                         vx = math.cos(rad) * 4
                         vy = math.sin(rad) * 4
@@ -312,14 +337,6 @@ while running:
                     if dist > 0:
                         vx = (dx / dist) * 5
                         vy = (dy / dist) * 5
-                        enemy_bullets.append([boss_x, boss_y, vx, vy])
-                # Pattern 2: Wave shots
-                elif boss['attack_pattern'] == 2 and boss['attack_timer'] % 30 == 0:
-                    boss_x = boss['x'] + boss['width'] // 2
-                    boss_y = boss['y'] + boss['height']
-                    for offset in range(-2, 3):
-                        vx = offset * 0.8
-                        vy = 5
                         enemy_bullets.append([boss_x, boss_y, vx, vy])
 
             # Spawn regular enemies only if no boss
