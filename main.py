@@ -55,7 +55,7 @@ enemy_bullets = []
 boss = None
 boss_spawn_threshold = 100
 reflectable_projectiles = []
-score = 190
+score = 290
 
 # Final boss hazards
 swarm_minions = []  # kamikaze crash minions
