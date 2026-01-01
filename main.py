@@ -304,23 +304,23 @@ while running:
             # Spawn distant planets periodically
             if game_state == 'playing':
                 planet_spawn_timer += 1
-                if planet_spawn_timer > random.randint(600, 1200):  # Every 10-20 seconds
+                if planet_spawn_timer > random.randint(1800, 3600):  # Every 30-60 seconds
                     planet_spawn_timer = 0
-                    planet_size = random.randint(60, 150)
+                    planet_size = random.randint(30, 70)
                     planets.append({
                         'x': random.randint(-planet_size, SCREEN_WIDTH),
                         'y': -planet_size,
                         'size': planet_size,
                         'color': random.choice([
-                            (120, 80, 150),   # Purple planet
-                            (180, 100, 80),   # Mars-like
-                            (100, 120, 140),  # Blue-gray
-                            (140, 120, 100),  # Brown
+                            (60, 40, 80),    # Dark purple planet
+                            (90, 50, 40),    # Dark mars-like
+                            (50, 60, 70),    # Dark blue-gray
+                            (70, 60, 50),    # Dark brown
                         ]),
                         'speed': star_speed * 0.4  # Planets move slower than stars
                     })
             
-            # Update and draw planets
+            # Update and draw planets (draw first so player appears on top)
             for planet in planets[:]:
                 if game_state == 'playing':
                     planet['y'] += planet['speed']
@@ -332,9 +332,9 @@ while running:
                 surf = pygame.Surface((planet['size'] * 2, planet['size'] * 2), pygame.SRCALPHA)
                 pygame.draw.circle(surf, planet['color'], (planet['size'], planet['size']), planet['size'])
                 # Add lighter highlight for depth
-                highlight_color = tuple(min(255, c + 40) for c in planet['color'])
+                highlight_color = tuple(min(255, c + 20) for c in planet['color'])
                 pygame.draw.circle(surf, highlight_color, (planet['size'] - planet['size']//4, planet['size'] - planet['size']//4), planet['size']//3)
-                surf.set_alpha(180)  # Make planets semi-transparent
+                surf.set_alpha(150)  # Make planets more transparent
                 screen.blit(surf, (int(planet['x'] - planet['size']), int(planet['y'] - planet['size'])))
             
             for star in stars:
