@@ -134,14 +134,42 @@ while running:
         screen.blit(exit_text, (SCREEN_WIDTH // 2 - 20, SCREEN_HEIGHT // 2 + 40))
 
     elif game_state == 'playing' or game_state == 'paused':
-        # Dynamic difficulty based on score
-        difficulty_level = score // LEVEL_SIZE
-        current_player_speed = player_speed + min(0.5 * difficulty_level, 5)
-        current_bullet_speed = bullet_speed + min(3 * difficulty_level, 20)
-        fire_interval = max(6, 24 - difficulty_level * 2)
-        current_enemy_speed = enemy_speed + min(0.5 * difficulty_level, 6)
-        current_spawn_rate = max(12, enemy_spawn_rate - difficulty_level * 2)
-        current_enemy_bullet_speed = 6 + min(0.5 * difficulty_level, 6)
+        # Milestone-based difficulty progression
+        if score < 50:
+            current_player_speed = player_speed
+            current_bullet_speed = bullet_speed
+            fire_interval = 24
+            current_enemy_speed = enemy_speed
+            current_spawn_rate = enemy_spawn_rate
+            current_enemy_bullet_speed = 6
+        elif score < 100:
+            current_player_speed = player_speed + 0.5
+            current_bullet_speed = bullet_speed + 2
+            fire_interval = 22
+            current_enemy_speed = enemy_speed + 0.3
+            current_spawn_rate = enemy_spawn_rate - 2
+            current_enemy_bullet_speed = 6.5
+        elif score < 150:
+            current_player_speed = player_speed + 1.2
+            current_bullet_speed = bullet_speed + 5
+            fire_interval = 18
+            current_enemy_speed = enemy_speed + 0.7
+            current_spawn_rate = max(12, enemy_spawn_rate - 5)
+            current_enemy_bullet_speed = 7.5
+        elif score < 200:
+            current_player_speed = player_speed + 2.0
+            current_bullet_speed = bullet_speed + 9
+            fire_interval = 14
+            current_enemy_speed = enemy_speed + 1.2
+            current_spawn_rate = max(12, enemy_spawn_rate - 8)
+            current_enemy_bullet_speed = 8.5
+        else:  # score >= 200
+            current_player_speed = player_speed + 3.0
+            current_bullet_speed = bullet_speed + 12
+            fire_interval = 10
+            current_enemy_speed = enemy_speed + 1.8
+            current_spawn_rate = max(12, enemy_spawn_rate - 12)
+            current_enemy_bullet_speed = 9.5
         # Player movement (only when not paused)
         if game_state == 'playing':
             if keys[pygame.K_a] and player_x > 0:
@@ -225,32 +253,39 @@ while running:
 
                 enemy_x = random.randint(spawn_x_min, spawn_x_max)
 
-                # Movement types unlock after score 50
+                # Enemy types unlock at score milestones
                 if score < 50:
                     enemy_type = 'straight'
-                else:
-                    if difficulty_level >= 4:
-                        enemy_type = random.choice(['shooter', 'sine', 'zigzag', 'straight'])
-                    elif difficulty_level >= 2:
-                        enemy_type = random.choice(['sine', 'zigzag', 'straight'])
-                    elif difficulty_level >= 1:
-                        enemy_type = random.choice(['straight', 'sine'])
-                    else:
-                        enemy_type = 'straight'
+                elif score < 100:
+                    enemy_type = random.choice(['straight', 'sine'])
+                elif score < 150:
+                    enemy_type = random.choice(['sine', 'zigzag', 'straight'])
+                elif score < 200:
+                    enemy_type = random.choice(['sine', 'zigzag', 'shooter', 'straight'])
+                else:  # score >= 200
+                    enemy_type = random.choice(['sine', 'zigzag', 'shooter', 'straight'])
 
+                # Calculate vx based on score for slightly more variation
+                vx_scale = 1.5 + (min(score, 200) / 200) * 0.5
                 new_enemy = {
                     'x': enemy_x,
                     'y': 0,
                     'base_x': enemy_x,
                     'type': enemy_type,
-                    'vx': random.choice([-1, 1]) * (1.5 + 0.2 * difficulty_level),
+                    'vx': random.choice([-1, 1]) * vx_scale,
                     'amplitude': chosen_amplitude,
                     'spawn_frame': frame_count,
                     'shoot_cooldown': 0,
                     'warning_timer': 0
                 }
                 if enemy_type == 'shooter':
-                    base_cooldown = max(45, 90 - difficulty_level * 8)
+                    # Shooter cooldown: shorter as score increases
+                    if score < 150:
+                        base_cooldown = 80
+                    elif score < 200:
+                        base_cooldown = 60
+                    else:
+                        base_cooldown = 45
                     new_enemy['shoot_cooldown'] = random.randint(base_cooldown, base_cooldown + 40)
                 enemies.append(new_enemy)
 
