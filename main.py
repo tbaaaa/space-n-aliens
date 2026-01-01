@@ -45,7 +45,7 @@ enemy_width = 50
 enemy_height = 50
 enemy_speed = 2
 enemies = []
-enemy_spawn_rate = 75  # frames
+enemy_spawn_rate = 65  # frames
 enemy_bullets = []
 
 # Score
@@ -218,13 +218,20 @@ while running:
                     chosen_amplitude = max_amplitude
 
                 enemy_x = random.randint(spawn_x_min, spawn_x_max)
-                enemy_type = 'straight'
-                if difficulty_level >= 4:
-                    enemy_type = random.choice(['shooter', 'sine', 'zigzag', 'straight'])
-                elif difficulty_level >= 2:
-                    enemy_type = random.choice(['sine', 'zigzag', 'straight'])
-                elif difficulty_level >= 1:
-                    enemy_type = random.choice(['straight', 'sine'])
+
+                # Movement types unlock after score 50
+                if score < 50:
+                    enemy_type = 'straight'
+                else:
+                    if difficulty_level >= 4:
+                        enemy_type = random.choice(['shooter', 'sine', 'zigzag', 'straight'])
+                    elif difficulty_level >= 2:
+                        enemy_type = random.choice(['sine', 'zigzag', 'straight'])
+                    elif difficulty_level >= 1:
+                        enemy_type = random.choice(['straight', 'sine'])
+                    else:
+                        enemy_type = 'straight'
+
                 new_enemy = {
                     'x': enemy_x,
                     'y': 0,
