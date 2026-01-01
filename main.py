@@ -53,7 +53,7 @@ enemy_bullets = []
 # Boss
 boss = None
 boss_spawn_threshold = 100
-score = 0
+score = 90
 font = pygame.font.Font(None, 36)
 
 # Game state
@@ -71,7 +71,7 @@ def reset_game():
     enemy_bullets = []
     boss = None
     boss_spawn_threshold = 100
-    score = 0
+    score = 90
     frame_count = 0
     player_hp = 3
     invincible = False
