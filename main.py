@@ -326,7 +326,13 @@ while running:
                             vx = (dx / dist) * current_enemy_bullet_speed
                             vy = (dy / dist) * current_enemy_bullet_speed
                             enemy_bullets.append([enemy_center_x, enemy_center_y, vx, vy])
-                            base_cooldown = max(45, 90 - difficulty_level * 8)
+                            # Use current_enemy_bullet_speed cooldown based on shooter config
+                            if score < 150:
+                                base_cooldown = 80
+                            elif score < 200:
+                                base_cooldown = 60
+                            else:
+                                base_cooldown = 45
                             enemy['shoot_cooldown'] = random.randint(base_cooldown, base_cooldown + 40)
                             enemy['warning_timer'] = 0
                     elif enemy['shoot_cooldown'] <= 0:
@@ -343,7 +349,13 @@ while running:
                         vx = (dx / dist) * current_enemy_bullet_speed
                         vy = (dy / dist) * current_enemy_bullet_speed
                         enemy_bullets.append([enemy_center_x, enemy_center_y, vx, vy])
-                        base_cooldown = max(45, 90 - difficulty_level * 8)
+                        # Use current_enemy_bullet_speed cooldown based on shooter config
+                        if score < 150:
+                            base_cooldown = 80
+                        elif score < 200:
+                            base_cooldown = 60
+                        else:
+                            base_cooldown = 45
                         enemy['shoot_cooldown'] = random.randint(base_cooldown, base_cooldown + 40)
                         enemy['warning_timer'] = 0
 
