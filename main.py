@@ -447,9 +447,9 @@ while running:
         # Update game state (only when playing)
         if game_state == 'playing':
             # Spawn boss if score threshold is reached
-            if boss is None and score >= boss_spawn_threshold and score % 100 == 0 and frame_count > 0:
+            if boss is None and score >= boss_spawn_threshold and frame_count > 0:
                 # Determine boss type based on current score
-                if score == 100:
+                if boss_spawn_threshold == 100:
                     # First boss - rectangular
                     boss = {
                         'type': 'rect',
@@ -466,7 +466,7 @@ while running:
                         'vulnerability_timer': 0,
                         'vulnerable': False
                     }
-                elif score == 200:
+                elif boss_spawn_threshold == 200:
                     # Second boss - star with reflectable projectiles
                     boss = {
                         'type': 'star',
