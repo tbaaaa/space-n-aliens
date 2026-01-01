@@ -22,6 +22,7 @@ DARK_PURPLE = (80, 0, 80)
 YELLOW = (255, 255, 0)
 CYAN = (0, 255, 255)
 ORANGE = (255, 140, 0)
+SPACE_DARK = (8, 8, 25)  # Very dark blue for space background
 
 # Difficulty tuning
 LEVEL_SIZE = 30  # points per difficulty step
@@ -79,6 +80,15 @@ font = pygame.font.Font(None, 36)
 debug_invincible = False
 e_key_pressed = False
 
+# Star field background
+stars = []
+for _ in range(150):
+    stars.append({
+        'x': random.randint(0, SCREEN_WIDTH),
+        'y': random.randint(0, SCREEN_HEIGHT),
+        'size': random.randint(1, 3)
+    })
+
 # Game state
 game_state = 'title'
 
@@ -87,7 +97,7 @@ clock = pygame.time.Clock()
 FPS = 60
 
 def reset_game():
-    global player_x, bullets, enemies, enemy_bullets, boss, reflectable_projectiles, score, frame_count, player_hp, invincible, invincible_timer, boss_spawn_threshold, swarm_minions, grabbers, multiplying_bullets, exploding_bullets, laser_warnings, active_lasers, path_hazards, explosion_effects, grabbed, grab_escape_meter
+    global player_x, bullets, enemies, enemy_bullets, boss, reflectable_projectiles, score, frame_count, player_hp, invincible, invincible_timer, boss_spawn_threshold, swarm_minions, grabbers, multiplying_bullets, exploding_bullets, laser_warnings, active_lasers, path_hazards, explosion_effects, grabbed, grab_escape_meter, stars
     player_x = SCREEN_WIDTH // 2 - player_width // 2
     bullets = []
     enemies = []
@@ -110,12 +120,20 @@ def reset_game():
     invincible_timer = 0
     grabbed = False
     grab_escape_meter = 0
+    # Reset stars
+    stars.clear()
+    for _ in range(150):
+        stars.append({
+            'x': random.randint(0, SCREEN_WIDTH),
+            'y': random.randint(0, SCREEN_HEIGHT),
+            'size': random.randint(1, 3)
+        })
 
 # Game loop
 running = True
 frame_count = 0
 while running:
-    screen.fill(BLACK)
+    screen.fill(SPACE_DARK)
 
     keys = pygame.key.get_pressed()
 
@@ -181,6 +199,7 @@ while running:
             current_enemy_speed = enemy_speed
             current_spawn_rate = enemy_spawn_rate
             current_enemy_bullet_speed = 6
+            star_speed = 1.0
         elif score < 100:
             current_player_speed = player_speed + 0.5
             current_bullet_speed = bullet_speed + 2
@@ -188,11 +207,15 @@ while running:
             current_enemy_speed = enemy_speed + 0.3
             current_spawn_rate = enemy_spawn_rate - 2
             current_enemy_bullet_speed = 6.5
+            star_speed = 1.5
         elif score < 150:
             current_player_speed = player_speed + 1.2
             current_bullet_speed = bullet_speed + 5
             fire_interval = 18
             current_enemy_speed = enemy_speed + 0.7
+            current_spawn_rate = enemy_spawn_rate - 5
+            current_enemy_bullet_speed = 7
+            star_speed = 2.0
             current_spawn_rate = max(12, enemy_spawn_rate - 5)
             current_enemy_bullet_speed = 7.5
         elif score < 200:
@@ -202,6 +225,7 @@ while running:
             current_enemy_speed = enemy_speed + 1.2
             current_spawn_rate = max(12, enemy_spawn_rate - 8)
             current_enemy_bullet_speed = 8.5
+            star_speed = 2.5
         else:  # score >= 200
             current_player_speed = player_speed + 3.0
             current_bullet_speed = bullet_speed + 12
@@ -209,6 +233,7 @@ while running:
             current_enemy_speed = enemy_speed + 1.8
             current_spawn_rate = max(12, enemy_spawn_rate - 12)
             current_enemy_bullet_speed = 9.5
+            star_speed = 3.0
         # Player movement (only when not paused)
         if game_state == 'playing':
             if not grabbed:
@@ -266,6 +291,26 @@ while running:
             else:  # player_hp == 1
                 player_color = RED
             pygame.draw.rect(screen, player_color, (player_x, player_y, player_width, player_height))
+
+        # Draw and update star field background
+        if game_state == 'playing' or game_state == 'paused':
+            for star in stars:
+                # Draw star
+                if star['size'] == 1:
+                    pygame.draw.circle(screen, (200, 200, 200), (int(star['x']), int(star['y'])), 1)
+                elif star['size'] == 2:
+                    pygame.draw.circle(screen, (220, 220, 220), (int(star['x']), int(star['y'])), 2)
+                else:
+                    pygame.draw.circle(screen, (255, 255, 255), (int(star['x']), int(star['y'])), 2)
+                
+                # Update star position (only when playing)
+                if game_state == 'playing':
+                    star['y'] += star_speed * (star['size'] * 0.3)  # Bigger stars move slightly faster
+                    
+                    # Wrap around when star goes off screen
+                    if star['y'] > SCREEN_HEIGHT:
+                        star['y'] = 0
+                        star['x'] = random.randint(0, SCREEN_WIDTH)
 
         # Draw aiming line (only when playing)
         if game_state == 'playing':
