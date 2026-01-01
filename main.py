@@ -89,6 +89,10 @@ for _ in range(150):
         'size': random.randint(1, 3)
     })
 
+# Distant planets
+planets = []
+planet_spawn_timer = 0
+
 # Game state
 game_state = 'title'
 
@@ -97,7 +101,7 @@ clock = pygame.time.Clock()
 FPS = 60
 
 def reset_game():
-    global player_x, bullets, enemies, enemy_bullets, boss, reflectable_projectiles, score, frame_count, player_hp, invincible, invincible_timer, boss_spawn_threshold, swarm_minions, grabbers, multiplying_bullets, exploding_bullets, laser_warnings, active_lasers, path_hazards, explosion_effects, grabbed, grab_escape_meter, stars
+    global player_x, bullets, enemies, enemy_bullets, boss, reflectable_projectiles, score, frame_count, player_hp, invincible, invincible_timer, boss_spawn_threshold, swarm_minions, grabbers, multiplying_bullets, exploding_bullets, laser_warnings, active_lasers, path_hazards, explosion_effects, grabbed, grab_escape_meter, stars, planets, planet_spawn_timer
     player_x = SCREEN_WIDTH // 2 - player_width // 2
     bullets = []
     enemies = []
@@ -128,6 +132,9 @@ def reset_game():
             'y': random.randint(0, SCREEN_HEIGHT),
             'size': random.randint(1, 3)
         })
+    # Reset planets
+    planets.clear()
+    planet_spawn_timer = 0
 
 # Game loop
 running = True
@@ -199,7 +206,7 @@ while running:
             current_enemy_speed = enemy_speed
             current_spawn_rate = enemy_spawn_rate
             current_enemy_bullet_speed = 6
-            star_speed = 1.0
+            star_speed = 1.5
         elif score < 100:
             current_player_speed = player_speed + 0.5
             current_bullet_speed = bullet_speed + 2
@@ -207,7 +214,7 @@ while running:
             current_enemy_speed = enemy_speed + 0.3
             current_spawn_rate = enemy_spawn_rate - 2
             current_enemy_bullet_speed = 6.5
-            star_speed = 1.5
+            star_speed = 2.5
         elif score < 150:
             current_player_speed = player_speed + 1.2
             current_bullet_speed = bullet_speed + 5
@@ -215,7 +222,7 @@ while running:
             current_enemy_speed = enemy_speed + 0.7
             current_spawn_rate = enemy_spawn_rate - 5
             current_enemy_bullet_speed = 7
-            star_speed = 2.0
+            star_speed = 3.5
             current_spawn_rate = max(12, enemy_spawn_rate - 5)
             current_enemy_bullet_speed = 7.5
         elif score < 200:
@@ -225,7 +232,7 @@ while running:
             current_enemy_speed = enemy_speed + 1.2
             current_spawn_rate = max(12, enemy_spawn_rate - 8)
             current_enemy_bullet_speed = 8.5
-            star_speed = 2.5
+            star_speed = 4.5
         else:  # score >= 200
             current_player_speed = player_speed + 3.0
             current_bullet_speed = bullet_speed + 12
@@ -233,7 +240,7 @@ while running:
             current_enemy_speed = enemy_speed + 1.8
             current_spawn_rate = max(12, enemy_spawn_rate - 12)
             current_enemy_bullet_speed = 9.5
-            star_speed = 3.0
+            star_speed = 5.5
         # Player movement (only when not paused)
         if game_state == 'playing':
             if not grabbed:
@@ -294,6 +301,42 @@ while running:
 
         # Draw and update star field background
         if game_state == 'playing' or game_state == 'paused':
+            # Spawn distant planets periodically
+            if game_state == 'playing':
+                planet_spawn_timer += 1
+                if planet_spawn_timer > random.randint(600, 1200):  # Every 10-20 seconds
+                    planet_spawn_timer = 0
+                    planet_size = random.randint(60, 150)
+                    planets.append({
+                        'x': random.randint(-planet_size, SCREEN_WIDTH),
+                        'y': -planet_size,
+                        'size': planet_size,
+                        'color': random.choice([
+                            (120, 80, 150),   # Purple planet
+                            (180, 100, 80),   # Mars-like
+                            (100, 120, 140),  # Blue-gray
+                            (140, 120, 100),  # Brown
+                        ]),
+                        'speed': star_speed * 0.4  # Planets move slower than stars
+                    })
+            
+            # Update and draw planets
+            for planet in planets[:]:
+                if game_state == 'playing':
+                    planet['y'] += planet['speed']
+                    if planet['y'] > SCREEN_HEIGHT + planet['size']:
+                        planets.remove(planet)
+                        continue
+                
+                # Draw planet with subtle shading
+                surf = pygame.Surface((planet['size'] * 2, planet['size'] * 2), pygame.SRCALPHA)
+                pygame.draw.circle(surf, planet['color'], (planet['size'], planet['size']), planet['size'])
+                # Add lighter highlight for depth
+                highlight_color = tuple(min(255, c + 40) for c in planet['color'])
+                pygame.draw.circle(surf, highlight_color, (planet['size'] - planet['size']//4, planet['size'] - planet['size']//4), planet['size']//3)
+                surf.set_alpha(180)  # Make planets semi-transparent
+                screen.blit(surf, (int(planet['x'] - planet['size']), int(planet['y'] - planet['size'])))
+            
             for star in stars:
                 # Draw star
                 if star['size'] == 1:
@@ -460,7 +503,7 @@ while running:
 
         # Draw multiplying bouncing bullets
         for b in multiplying_bullets[:]:
-            pygame.draw.circle(screen, WHITE, (int(b['x']), int(b['y'])), 6)
+            pygame.draw.circle(screen, (255, 0, 255), (int(b['x']), int(b['y'])), 6)  # Bright magenta
 
         # Draw exploding bullets (core + fuse ring)
         for eb in exploding_bullets[:]:
