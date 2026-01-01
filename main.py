@@ -326,9 +326,10 @@ while running:
                         'y': 50,
                         'width': 150,
                         'height': 150,
-                        'hp': 40,
-                        'max_hp': 40,
+                        'hp': 80,
+                        'max_hp': 80,
                         'attack_timer': 0,
+                        'attack_pattern': 0,
                         'vx': random.choice([-1, 1]) * 2.5,
                         'vy': random.choice([-0.8, 0.8]),
                         'vulnerability_timer': 0,
@@ -370,19 +371,83 @@ while running:
                 boss['attack_timer'] += 1
                 boss['vulnerability_timer'] += 1
 
-                # Boss becomes vulnerable periodically (every 5 seconds for 1 second)
-                if boss['vulnerability_timer'] % 300 < 60:
+                # Boss becomes vulnerable periodically (every 8 seconds for 1.5 seconds)
+                if boss['vulnerability_timer'] % 480 < 90:
                     boss['vulnerable'] = True
                 else:
                     boss['vulnerable'] = False
 
                 # Different attack patterns based on boss type
                 if boss.get('type') == 'star':
-                    # Star boss - shoots reflectable spinning squares
-                    if boss['attack_timer'] % 60 == 0:
+                    # Star boss - shoots reflectable spinning squares and fast bullets
+                    
+                    # Pattern selection every 2 seconds
+                    if boss['attack_timer'] % 120 == 0:
+                        boss['attack_pattern'] = random.randint(0, 3)
+                    
+                    # Pattern 0: 8-way square burst
+                    if boss['attack_pattern'] == 0 and boss['attack_timer'] % 80 == 0:
                         boss_x = boss['x'] + boss['width'] // 2
                         boss_y = boss['y'] + boss['height'] // 2
-                        # Shoot 4 reflectable squares in cardinal directions
+                        # Shoot 8 reflectable squares in all directions
+                        for angle in [0, 45, 90, 135, 180, 225, 270, 315]:
+                            rad = math.radians(angle)
+                            vx = math.cos(rad) * 3.5
+                            vy = math.sin(rad) * 3.5
+                            reflectable_projectiles.append({
+                                'x': boss_x,
+                                'y': boss_y,
+                                'vx': vx,
+                                'vy': vy,
+                                'rotation': angle,
+                                'reflected': False
+                            })
+                    
+                    # Pattern 1: Aimed fast bullets at player
+                    elif boss['attack_pattern'] == 1 and boss['attack_timer'] % 20 == 0:
+                        boss_x = boss['x'] + boss['width'] // 2
+                        boss_y = boss['y'] + boss['height'] // 2
+                        dx = player_x + player_width // 2 - boss_x
+                        dy = player_y + player_height // 2 - boss_y
+                        dist = math.hypot(dx, dy)
+                        if dist > 0:
+                            vx = (dx / dist) * 7
+                            vy = (dy / dist) * 7
+                            enemy_bullets.append([boss_x, boss_y, vx, vy])
+                    
+                    # Pattern 2: Spiral of squares
+                    elif boss['attack_pattern'] == 2 and boss['attack_timer'] % 15 == 0:
+                        boss_x = boss['x'] + boss['width'] // 2
+                        boss_y = boss['y'] + boss['height'] // 2
+                        spiral_angle = (boss['attack_timer'] * 15) % 360
+                        rad = math.radians(spiral_angle)
+                        vx = math.cos(rad) * 4
+                        vy = math.sin(rad) * 4
+                        reflectable_projectiles.append({
+                            'x': boss_x,
+                            'y': boss_y,
+                            'vx': vx,
+                            'vy': vy,
+                            'rotation': spiral_angle,
+                            'reflected': False
+                        })
+                    
+                    # Pattern 3: Triple spread + squares
+                    elif boss['attack_pattern'] == 3 and boss['attack_timer'] % 50 == 0:
+                        boss_x = boss['x'] + boss['width'] // 2
+                        boss_y = boss['y'] + boss['height'] // 2
+                        # Calculate angle to player
+                        dx = player_x + player_width // 2 - boss_x
+                        dy = player_y + player_height // 2 - boss_y
+                        base_angle = math.degrees(math.atan2(dy, dx))
+                        # Fire 3 fast bullets in spread
+                        for angle_offset in [-20, 0, 20]:
+                            angle = base_angle + angle_offset
+                            rad = math.radians(angle)
+                            vx = math.cos(rad) * 6
+                            vy = math.sin(rad) * 6
+                            enemy_bullets.append([boss_x, boss_y, vx, vy])
+                        # Also shoot 4 squares
                         for angle in [0, 90, 180, 270]:
                             rad = math.radians(angle)
                             vx = math.cos(rad) * 3
@@ -616,7 +681,7 @@ while running:
                             score += 50
                         break
 
-            # Check bullet-boss collisions (only when vulnerable)
+            # Check bullet-boss collisions (only when vulnerable, but very low damage)
             if boss and boss.get('vulnerable', False):
                 for bullet in bullets[:]:
                     if (bullet[0] < boss['x'] + boss['width'] and
@@ -625,7 +690,8 @@ while running:
                         bullet[1] + bullet_height > boss['y']):
                         if bullet in bullets:
                             bullets.remove(bullet)
-                        boss['hp'] -= 1
+                        # Very low damage - player should use reflected squares
+                        boss['hp'] -= 0.15
                         if boss['hp'] <= 0:
                             boss = None
                             score += 50
