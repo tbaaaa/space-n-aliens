@@ -491,7 +491,7 @@ while running:
                         'y': 40,
                         'width': 180,
                         'height': 180,
-                        'hp': 180,
+                        'hp': 45,  # Start at 25% HP (stage 4)
                         'max_hp': 180,
                         'attack_timer': 0,
                         'attack_pattern': 0,
@@ -499,8 +499,8 @@ while running:
                         'vy': random.choice([-1.1, 1.1]),
                         'vulnerability_timer': 0,
                         'vulnerable': True,  # always damageable, but very tanky
-                        'stage': 1,
-                        'last_stage': 1,
+                        'stage': 4,  # Start at stage 4 for testing
+                        'last_stage': 4,
                         'stage_change_timer': 0
                     }
                 boss_spawn_threshold += 100
