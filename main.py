@@ -11,10 +11,15 @@ SCREEN_HEIGHT = 800
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
 pygame.display.set_caption("Space N Aliens")
 
+# Colors
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
 PURPLE = (128, 0, 128)
 DARK_PURPLE = (80, 0, 80)
 YELLOW = (255, 255, 0)
-CYAN = (0, 255, 255)
 CYAN = (0, 255, 255)
 
 # Difficulty tuning
@@ -448,13 +453,6 @@ while running:
                             invincible_timer = invincible_duration
                     continue
 
-            # Update bullets
-            for bullet in bullets[:]:
-                bullet[0] += bullet[2]
-                bullet[1] += bullet[3]
-                if bullet[0] < -bullet_width or bullet[0] > SCREEN_WIDTH or bullet[1] < -bullet_height or bullet[1] > SCREEN_HEIGHT:
-                    bullets.remove(bullet)
-
             # Update enemy bullets
             for eb in enemy_bullets[:]:
                 eb[0] += eb[2]
@@ -462,33 +460,17 @@ while running:
                 if eb[0] < -10 or eb[0] > SCREEN_WIDTH + 10 or eb[1] < -10 or eb[1] > SCREEN_HEIGHT + 10:
                     enemy_bullets.remove(eb)
 
-            # Check bullet-boss weak spot collisions
-            if boss:
-                for bullet in bullets[:]:
-                    for spot in boss['weak_spots']:
-                        dist_to_spot = math.hypot(bullet[0] - spot['x'], bullet[1] - spot['y'])
-                        if dist_to_spot < spot['radius'] + bullet_width // 2:
-                            if bullet in bullets:
-                                bullets.remove(bullet)
-                            boss['hp'] -= 1
-                            break
-                # Check if boss defeated
-                if boss['hp'] <= 0:
-                    boss = None
-                    score += 50  # Bonus for defeating boss
-
             # Check bullet-enemy collisions
-            if boss is None:  # Only check regular enemy collisions if no boss
-                for bullet in bullets[:]:
-                    for enemy in enemies[:]:
-                        if (bullet[0] < enemy['x'] + enemy_width and
-                            bullet[0] + bullet_width > enemy['x'] and
-                            bullet[1] < enemy['y'] + enemy_height and
-                            bullet[1] + bullet_height > enemy['y']):
-                            bullets.remove(bullet)
-                            enemies.remove(enemy)
-                            score += 1
-                            break
+            for bullet in bullets[:]:
+                for enemy in enemies[:]:
+                    if (bullet[0] < enemy['x'] + enemy_width and
+                        bullet[0] + bullet_width > enemy['x'] and
+                        bullet[1] < enemy['y'] + enemy_height and
+                        bullet[1] + bullet_height > enemy['y']):
+                        bullets.remove(bullet)
+                        enemies.remove(enemy)
+                        score += 1
+                        break
 
             # Check player-enemy collisions
             if not invincible:
