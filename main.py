@@ -45,7 +45,7 @@ enemy_width = 50
 enemy_height = 50
 enemy_speed = 2
 enemies = []
-enemy_spawn_rate = 65  # frames
+enemy_spawn_rate = 60  # frames
 enemy_bullets = []
 
 # Score
