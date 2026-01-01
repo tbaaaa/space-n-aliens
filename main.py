@@ -11,15 +11,11 @@ SCREEN_HEIGHT = 800
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
 pygame.display.set_caption("Space N Aliens")
 
-# Colors
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
 PURPLE = (128, 0, 128)
 DARK_PURPLE = (80, 0, 80)
 YELLOW = (255, 255, 0)
+CYAN = (0, 255, 255)
+CYAN = (0, 255, 255)
 
 # Difficulty tuning
 LEVEL_SIZE = 30  # points per difficulty step
@@ -49,7 +45,9 @@ enemies = []
 enemy_spawn_rate = 55  # frames
 enemy_bullets = []
 
-# Score
+# Boss
+boss = None
+boss_spawn_threshold = 100
 score = 0
 font = pygame.font.Font(None, 36)
 
@@ -61,11 +59,13 @@ clock = pygame.time.Clock()
 FPS = 60
 
 def reset_game():
-    global player_x, bullets, enemies, enemy_bullets, score, frame_count, player_hp, invincible, invincible_timer
+    global player_x, bullets, enemies, enemy_bullets, boss, score, frame_count, player_hp, invincible, invincible_timer, boss_spawn_threshold
     player_x = SCREEN_WIDTH // 2 - player_width // 2
     bullets = []
     enemies = []
     enemy_bullets = []
+    boss = None
+    boss_spawn_threshold = 100
     score = 0
     frame_count = 0
     player_hp = 3
@@ -230,17 +230,95 @@ while running:
         for eb in enemy_bullets[:]:
             pygame.draw.circle(screen, RED, (int(eb[0]), int(eb[1])), 5)
 
+        # Draw boss if active
+        if boss:
+            boss_color = BLUE
+            pygame.draw.rect(screen, boss_color, (boss['x'], boss['y'], boss['width'], boss['height']))
+            # Draw weak spots
+            for spot in boss['weak_spots']:
+                spot_color = CYAN if spot.get('highlighted', False) else PURPLE
+                pygame.draw.circle(screen, spot_color, (int(spot['x']), int(spot['y'])), spot['radius'])
+            # Draw boss HP bar
+            hp_ratio = boss['hp'] / boss['max_hp']
+            hp_bar_width = boss['width']
+            hp_bar_height = 10
+            pygame.draw.rect(screen, RED, (boss['x'], boss['y'] - 20, hp_bar_width * hp_ratio, hp_bar_height))
+            pygame.draw.rect(screen, WHITE, (boss['x'], boss['y'] - 20, hp_bar_width, hp_bar_height), 2)
+
         # Update game state (only when playing)
         if game_state == 'playing':
-            # Update bullets
-            for bullet in bullets[:]:
-                bullet[0] += bullet[2]
-                bullet[1] += bullet[3]
-                if bullet[0] < -bullet_width or bullet[0] > SCREEN_WIDTH or bullet[1] < -bullet_height or bullet[1] > SCREEN_HEIGHT:
-                    bullets.remove(bullet)
+            # Spawn boss if score threshold is reached
+            if boss is None and score >= boss_spawn_threshold and score % 100 == 0 and frame_count > 0:
+                # Spawn a new boss
+                boss = {
+                    'x': SCREEN_WIDTH // 2 - 60,
+                    'y': 50,
+                    'width': 120,
+                    'height': 120,
+                    'hp': 30,
+                    'max_hp': 30,
+                    'attack_timer': 0,
+                    'attack_pattern': 0,
+                    'weak_spots': [
+                        {'x': SCREEN_WIDTH // 2 - 60 + 30, 'y': 50 + 30, 'radius': 10, 'highlighted': False},
+                        {'x': SCREEN_WIDTH // 2 - 60 + 90, 'y': 50 + 30, 'radius': 10, 'highlighted': False},
+                        {'x': SCREEN_WIDTH // 2 - 60 + 60, 'y': 50 + 90, 'radius': 10, 'highlighted': False}
+                    ],
+                    'weak_spot_timer': 0
+                }
+                boss_spawn_threshold += 100
 
-            # Spawn enemies
-            if frame_count % current_spawn_rate == 0:
+            # Update boss if active
+            if boss:
+                boss['attack_timer'] += 1
+                boss['weak_spot_timer'] += 1
+
+                # Highlight weak spots periodically
+                if boss['weak_spot_timer'] % 60 == 0:
+                    for spot in boss['weak_spots']:
+                        spot['highlighted'] = True
+                elif boss['weak_spot_timer'] % 60 > 40:
+                    for spot in boss['weak_spots']:
+                        spot['highlighted'] = True
+                else:
+                    for spot in boss['weak_spots']:
+                        spot['highlighted'] = False
+
+                # Boss attack patterns
+                if boss['attack_timer'] % 40 == 0:
+                    boss['attack_pattern'] = random.randint(0, 2)
+
+                # Pattern 0: Spread shot
+                if boss['attack_pattern'] == 0 and boss['attack_timer'] % 40 == 0:
+                    boss_x = boss['x'] + boss['width'] // 2
+                    boss_y = boss['y'] + boss['height']
+                    for angle in [270 - 20, 270, 270 + 20]:
+                        rad = math.radians(angle)
+                        vx = math.cos(rad) * 4
+                        vy = math.sin(rad) * 4
+                        enemy_bullets.append([boss_x, boss_y, vx, vy])
+                # Pattern 1: Aimed shot at player
+                elif boss['attack_pattern'] == 1 and boss['attack_timer'] % 50 == 0:
+                    boss_x = boss['x'] + boss['width'] // 2
+                    boss_y = boss['y'] + boss['height']
+                    dx = player_x + player_width // 2 - boss_x
+                    dy = player_y + player_height // 2 - boss_y
+                    dist = math.hypot(dx, dy)
+                    if dist > 0:
+                        vx = (dx / dist) * 5
+                        vy = (dy / dist) * 5
+                        enemy_bullets.append([boss_x, boss_y, vx, vy])
+                # Pattern 2: Wave shots
+                elif boss['attack_pattern'] == 2 and boss['attack_timer'] % 30 == 0:
+                    boss_x = boss['x'] + boss['width'] // 2
+                    boss_y = boss['y'] + boss['height']
+                    for offset in range(-2, 3):
+                        vx = offset * 0.8
+                        vy = 5
+                        enemy_bullets.append([boss_x, boss_y, vx, vy])
+
+            # Spawn regular enemies only if no boss
+            if boss is None and frame_count % current_spawn_rate == 0:
                 # Keep sine/zigzag spawns within horizontal bounds
                 max_amplitude = max(20, (SCREEN_WIDTH - enemy_width) // 2)
                 chosen_amplitude = min(random.randint(40, 120), max_amplitude)
@@ -370,6 +448,13 @@ while running:
                             invincible_timer = invincible_duration
                     continue
 
+            # Update bullets
+            for bullet in bullets[:]:
+                bullet[0] += bullet[2]
+                bullet[1] += bullet[3]
+                if bullet[0] < -bullet_width or bullet[0] > SCREEN_WIDTH or bullet[1] < -bullet_height or bullet[1] > SCREEN_HEIGHT:
+                    bullets.remove(bullet)
+
             # Update enemy bullets
             for eb in enemy_bullets[:]:
                 eb[0] += eb[2]
@@ -377,17 +462,33 @@ while running:
                 if eb[0] < -10 or eb[0] > SCREEN_WIDTH + 10 or eb[1] < -10 or eb[1] > SCREEN_HEIGHT + 10:
                     enemy_bullets.remove(eb)
 
+            # Check bullet-boss weak spot collisions
+            if boss:
+                for bullet in bullets[:]:
+                    for spot in boss['weak_spots']:
+                        dist_to_spot = math.hypot(bullet[0] - spot['x'], bullet[1] - spot['y'])
+                        if dist_to_spot < spot['radius'] + bullet_width // 2:
+                            if bullet in bullets:
+                                bullets.remove(bullet)
+                            boss['hp'] -= 1
+                            break
+                # Check if boss defeated
+                if boss['hp'] <= 0:
+                    boss = None
+                    score += 50  # Bonus for defeating boss
+
             # Check bullet-enemy collisions
-            for bullet in bullets[:]:
-                for enemy in enemies[:]:
-                    if (bullet[0] < enemy['x'] + enemy_width and
-                        bullet[0] + bullet_width > enemy['x'] and
-                        bullet[1] < enemy['y'] + enemy_height and
-                        bullet[1] + bullet_height > enemy['y']):
-                        bullets.remove(bullet)
-                        enemies.remove(enemy)
-                        score += 1
-                        break
+            if boss is None:  # Only check regular enemy collisions if no boss
+                for bullet in bullets[:]:
+                    for enemy in enemies[:]:
+                        if (bullet[0] < enemy['x'] + enemy_width and
+                            bullet[0] + bullet_width > enemy['x'] and
+                            bullet[1] < enemy['y'] + enemy_height and
+                            bullet[1] + bullet_height > enemy['y']):
+                            bullets.remove(bullet)
+                            enemies.remove(enemy)
+                            score += 1
+                            break
 
             # Check player-enemy collisions
             if not invincible:
