@@ -685,11 +685,11 @@ while running:
                         # Following the boss's winding path
                         path_hazards.append({
                             'bullets': [],
-                            'duration': 240,  # How long to spawn new bullets
+                            'duration': 400,  # How long to spawn new bullets
                             'spawn_interval': 5,
                             'spawn_timer': 0,
                             'bullet_speed': 3,
-                            'converge_speed': 0.15,  # How fast bullets move inward
+                            'converge_speed': 0.35,  # How fast bullets move inward
                             'active': True,
                             'elapsed_time': 0  # Track total time for convergence
                         })
