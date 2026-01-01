@@ -80,6 +80,14 @@ font = pygame.font.Font(None, 36)
 debug_invincible = False
 e_key_pressed = False
 
+# Hyperdrive cutscene
+hyperdrive_active = False
+hyperdrive_timer = 0
+hyperdrive_duration = 180  # 3 seconds
+ship_shake_x = 0
+ship_shake_y = 0
+environment_level = 0  # 0=normal, 1=after first boss, 2=after second boss, 3=after final boss
+
 # Star field background
 stars = []
 for _ in range(150):
@@ -101,7 +109,7 @@ clock = pygame.time.Clock()
 FPS = 60
 
 def reset_game():
-    global player_x, bullets, enemies, enemy_bullets, boss, reflectable_projectiles, score, frame_count, player_hp, invincible, invincible_timer, boss_spawn_threshold, swarm_minions, grabbers, multiplying_bullets, exploding_bullets, laser_warnings, active_lasers, path_hazards, explosion_effects, grabbed, grab_escape_meter, stars, planets, planet_spawn_timer
+    global player_x, bullets, enemies, enemy_bullets, boss, reflectable_projectiles, score, frame_count, player_hp, invincible, invincible_timer, boss_spawn_threshold, swarm_minions, grabbers, multiplying_bullets, exploding_bullets, laser_warnings, active_lasers, path_hazards, explosion_effects, grabbed, grab_escape_meter, stars, planets, planet_spawn_timer, hyperdrive_active, hyperdrive_timer, ship_shake_x, ship_shake_y, environment_level
     player_x = SCREEN_WIDTH // 2 - player_width // 2
     bullets = []
     enemies = []
@@ -135,12 +143,27 @@ def reset_game():
     # Reset planets
     planets.clear()
     planet_spawn_timer = 0
+    # Reset hyperdrive
+    hyperdrive_active = False
+    hyperdrive_timer = 0
+    ship_shake_x = 0
+    ship_shake_y = 0
+    environment_level = 0
 
 # Game loop
 running = True
 frame_count = 0
 while running:
-    screen.fill(SPACE_DARK)
+    # Environment-based background color
+    if environment_level == 0:
+        bg_color = SPACE_DARK  # (8, 8, 25) Dark blue
+    elif environment_level == 1:
+        bg_color = (12, 8, 30)  # Slightly purple tint
+    elif environment_level == 2:
+        bg_color = (20, 5, 25)  # More purple
+    else:  # environment_level >= 3
+        bg_color = (25, 5, 30)  # Deep purple/magenta space
+    screen.fill(bg_color)
 
     keys = pygame.key.get_pressed()
 
@@ -270,6 +293,30 @@ while running:
             else:
                 e_key_pressed = False
             
+            # Update hyperdrive cutscene
+            if hyperdrive_active:
+                hyperdrive_timer += 1
+                # Ship shake effect
+                ship_shake_x = random.randint(-8, 8)
+                ship_shake_y = random.randint(-8, 8)
+                
+                # Speed up remaining enemies
+                for enemy in enemies[:]:
+                    enemy['y'] += current_enemy_speed * 12
+                    if enemy['y'] > SCREEN_HEIGHT:
+                        enemies.remove(enemy)
+                
+                # End hyperdrive after duration
+                if hyperdrive_timer >= hyperdrive_duration:
+                    hyperdrive_active = False
+                    hyperdrive_timer = 0
+                    ship_shake_x = 0
+                    ship_shake_y = 0
+                    environment_level += 1
+            else:
+                ship_shake_x = 0
+                ship_shake_y = 0
+            
             mouse_pressed = pygame.mouse.get_pressed()
             if mouse_pressed[0] and frame_count % fire_interval == 0:  # LMB
                 mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -297,33 +344,44 @@ while running:
                 player_color = YELLOW
             else:  # player_hp == 1
                 player_color = RED
-            pygame.draw.rect(screen, player_color, (player_x, player_y, player_width, player_height))
+            # Apply ship shake during hyperdrive
+            shake_offset_x = ship_shake_x if hyperdrive_active else 0
+            shake_offset_y = ship_shake_y if hyperdrive_active else 0
+            pygame.draw.rect(screen, player_color, (player_x + shake_offset_x, player_y + shake_offset_y, player_width, player_height))
 
         # Draw and update star field background
         if game_state == 'playing' or game_state == 'paused':
             # Spawn distant planets periodically
-            if game_state == 'playing':
+            if game_state == 'playing' and not hyperdrive_active:
                 planet_spawn_timer += 1
                 if planet_spawn_timer > random.randint(1800, 3600):  # Every 30-60 seconds
                     planet_spawn_timer = 0
-                    planet_size = random.randint(30, 70)
-                    planets.append({
-                        'x': random.randint(-planet_size, SCREEN_WIDTH),
-                        'y': -planet_size,
-                        'size': planet_size,
-                        'color': random.choice([
-                            (60, 40, 80),    # Dark purple planet
-                            (90, 50, 40),    # Dark mars-like
-                            (50, 60, 70),    # Dark blue-gray
-                            (70, 60, 50),    # Dark brown
-                        ]),
-                        'speed': star_speed * 0.4  # Planets move slower than stars
-                    })
+                    num_planets = random.randint(1, 2)  # Spawn 1 or 2 planets
+                    for _ in range(num_planets):
+                        planet_size = random.randint(25, 90)  # More varied sizes
+                        # Environment-based planet colors
+                        if environment_level == 0:
+                            colors = [(60, 40, 80), (90, 50, 40), (50, 60, 70), (70, 60, 50)]
+                        elif environment_level == 1:
+                            colors = [(80, 50, 100), (110, 60, 50), (60, 80, 90), (90, 70, 60)]  # Slightly brighter
+                        elif environment_level == 2:
+                            colors = [(100, 30, 120), (130, 40, 60), (40, 100, 120), (120, 90, 40)]  # More vibrant
+                        else:  # environment_level == 3
+                            colors = [(140, 20, 160), (160, 30, 80), (20, 140, 180), (180, 120, 20)]  # Very alien colors
+                        
+                        planets.append({
+                            'x': random.randint(-planet_size, SCREEN_WIDTH),
+                            'y': -planet_size,
+                            'size': planet_size,
+                            'color': random.choice(colors),
+                            'speed': star_speed * 0.4  # Planets move slower than stars
+                        })
             
             # Update and draw planets (draw first so player appears on top)
             for planet in planets[:]:
                 if game_state == 'playing':
-                    planet['y'] += planet['speed']
+                    speed_multiplier = 15 if hyperdrive_active else 1
+                    planet['y'] += planet['speed'] * speed_multiplier
                     if planet['y'] > SCREEN_HEIGHT + planet['size']:
                         planets.remove(planet)
                         continue
@@ -348,12 +406,21 @@ while running:
                 
                 # Update star position (only when playing)
                 if game_state == 'playing':
-                    star['y'] += star_speed * (star['size'] * 0.3)  # Bigger stars move slightly faster
+                    speed_multiplier = 15 if hyperdrive_active else 1
+                    star['y'] += star_speed * (star['size'] * 0.3) * speed_multiplier  # Bigger stars move slightly faster
                     
                     # Wrap around when star goes off screen
                     if star['y'] > SCREEN_HEIGHT:
                         star['y'] = 0
                         star['x'] = random.randint(0, SCREEN_WIDTH)
+        
+        # Hyperdrive screen flash effect
+        if hyperdrive_active:
+            flash_intensity = int(abs(math.sin(hyperdrive_timer * 0.3) * 100))
+            flash_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            flash_surf.set_alpha(flash_intensity)
+            flash_surf.fill((255, 255, 255))
+            screen.blit(flash_surf, (0, 0))
 
         # Draw aiming line (only when playing)
         if game_state == 'playing':
@@ -1020,7 +1087,7 @@ while running:
 
                 if enemy['y'] > SCREEN_HEIGHT:
                     enemies.remove(enemy)
-                    if not invincible and not debug_invincible:
+                    if not invincible and not debug_invincible and not hyperdrive_active:
                         player_hp -= 1
                         if player_hp <= 0:
                             game_state = 'game_over'
@@ -1046,7 +1113,7 @@ while running:
                 if m['x'] < -40 or m['x'] > SCREEN_WIDTH + 40 or m['y'] > SCREEN_HEIGHT + 40:
                     swarm_minions.remove(m)
                     continue
-                if not invincible and not debug_invincible:
+                if not invincible and not debug_invincible and not hyperdrive_active:
                     if (player_x < m['x'] + 10 and player_x + player_width > m['x'] - 10 and
                         player_y < m['y'] + 25 and player_y + player_height > m['y'] - 5):
                         swarm_minions.remove(m)
@@ -1078,7 +1145,7 @@ while running:
                     speed = g['vy']
                     g['x'] += (dx / dist) * speed
                     g['y'] += (dy / dist) * speed
-                    if not invincible and not debug_invincible and (abs(g['x'] - (player_x + player_width // 2)) < 20 and abs(g['y'] - (player_y + player_height // 2)) < 20):
+                    if not invincible and not debug_invincible and not hyperdrive_active and (abs(g['x'] - (player_x + player_width // 2)) < 20 and abs(g['y'] - (player_y + player_height // 2)) < 20):
                         g['attached'] = True
                         grabbed = True
                         grab_escape_meter = 0
@@ -1153,7 +1220,7 @@ while running:
             for al in active_lasers[:]:
                 al['life'] -= 1
                 # Player hit check (line vs point simplified by distance to segment)
-                if not invincible and not debug_invincible:
+                if not invincible and not debug_invincible and not hyperdrive_active:
                     px = player_x + player_width // 2
                     py = player_y + player_height // 2
                     x1, y1 = al['start']
@@ -1250,7 +1317,7 @@ while running:
                     # Check collision with left wall
                     for lb in left_bullets:
                         if abs(lb['x'] - px) < 15:  # Player hit left wall
-                            if not invincible and not debug_invincible:
+                            if not invincible and not debug_invincible and not hyperdrive_active:
                                 player_hp -= 1
                                 if player_hp <= 0:
                                     game_state = 'game_over'
@@ -1266,7 +1333,7 @@ while running:
                     # Check collision with right wall
                     for rb in right_bullets:
                         if abs(rb['x'] - px) < 15:  # Player hit right wall
-                            if not invincible and not debug_invincible:
+                            if not invincible and not debug_invincible and not hyperdrive_active:
                                 player_hp -= 1
                                 if player_hp <= 0:
                                     game_state = 'game_over'
@@ -1362,7 +1429,9 @@ while running:
                             laser_warnings.clear()
                             active_lasers.clear()
                             path_hazards.clear()
-                            score += 50
+                            # Trigger hyperdrive cutscene
+                            hyperdrive_active = True
+                            hyperdrive_timer = 0
                         break
 
             # Check bullet-enemy collisions
@@ -1378,7 +1447,7 @@ while running:
                         break
 
             # Check player-enemy collisions
-            if not invincible and not debug_invincible:
+            if not invincible and not debug_invincible and not hyperdrive_active:
                 for enemy in enemies[:]:
                     if (player_x < enemy['x'] + enemy_width and
                         player_x + player_width > enemy['x'] and
@@ -1394,7 +1463,7 @@ while running:
                         break
 
             # Check player hit by enemy bullets
-            if not invincible and not debug_invincible:
+            if not invincible and not debug_invincible and not hyperdrive_active:
                 for eb in enemy_bullets[:]:
                     if (player_x < eb[0] + 6 and
                         player_x + player_width > eb[0] - 6 and
@@ -1410,7 +1479,7 @@ while running:
                         break
 
             # Check player hit by multiplying bullets
-            if not invincible and not debug_invincible:
+            if not invincible and not debug_invincible and not hyperdrive_active:
                 for mb in multiplying_bullets[:]:
                     if (player_x < mb['x'] + 6 and
                         player_x + player_width > mb['x'] - 6 and
@@ -1426,7 +1495,7 @@ while running:
                         break
 
             # Check player hit by unreflected projectiles
-            if not invincible and not debug_invincible:
+            if not invincible and not debug_invincible and not hyperdrive_active:
                 for proj in reflectable_projectiles[:]:
                     if not proj['reflected']:
                         dist = math.hypot(player_x + player_width // 2 - proj['x'], player_y + player_height // 2 - proj['y'])
