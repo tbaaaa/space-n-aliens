@@ -278,11 +278,11 @@ while running:
                 boss['attack_timer'] += 1
                 boss['weak_spot_timer'] += 1
 
-                # Highlight weak spots periodically
-                if boss['weak_spot_timer'] % 60 == 0:
+                # Highlight weak spots periodically (every 5 seconds)
+                if boss['weak_spot_timer'] % 300 == 0:
                     for spot in boss['weak_spots']:
                         spot['highlighted'] = True
-                elif boss['weak_spot_timer'] % 60 > 40:
+                elif boss['weak_spot_timer'] % 300 > 240:
                     for spot in boss['weak_spots']:
                         spot['highlighted'] = True
                 else:
