@@ -193,8 +193,8 @@ while running:
         for enemy in enemies[:]:
             enemy_color = PURPLE
             if enemy['type'] == 'shooter' and enemy.get('warning_timer', 0) > 0:
-                # Flash dark purple every 5 frames
-                if (enemy['warning_timer'] // 5) % 2 == 0:
+                # Flash dark purple every 3 frames for a faster warning
+                if (enemy['warning_timer'] // 3) % 2 == 0:
                     enemy_color = DARK_PURPLE
             pygame.draw.rect(screen, enemy_color, (enemy['x'], enemy['y'], enemy_width, enemy_height))
 
@@ -269,7 +269,7 @@ while running:
                 enemy['y'] += current_enemy_speed
 
                 if enemy['type'] == 'shooter':
-                    warning_duration = 30
+                    warning_duration = 15
                     enemy['shoot_cooldown'] -= 1
 
                     # Start warning when cooldown is close to firing
