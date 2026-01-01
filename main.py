@@ -257,7 +257,9 @@ while running:
         is_invincible = invincible or debug_invincible
         if not is_invincible or (invincible_timer // 10) % 2 == 0:  # Flash every 10 frames
             # Choose color based on HP
-            if player_hp == 3:
+            if debug_invincible:
+                player_color = CYAN
+            elif player_hp == 3:
                 player_color = GREEN
             elif player_hp == 2:
                 player_color = YELLOW
@@ -930,7 +932,7 @@ while running:
 
                 if enemy['y'] > SCREEN_HEIGHT:
                     enemies.remove(enemy)
-                    if not invincible:
+                    if not invincible and not debug_invincible:
                         player_hp -= 1
                         if player_hp <= 0:
                             game_state = 'game_over'
