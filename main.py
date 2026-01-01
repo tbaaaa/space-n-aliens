@@ -83,7 +83,7 @@ e_key_pressed = False
 # Hyperdrive cutscene
 hyperdrive_active = False
 hyperdrive_timer = 0
-hyperdrive_duration = 180  # 3 seconds
+hyperdrive_duration = 600  # 10 seconds
 ship_shake_x = 0
 ship_shake_y = 0
 environment_level = 0  # 0=normal, 1=after first boss, 2=after second boss, 3=after final boss
@@ -158,11 +158,11 @@ while running:
     if environment_level == 0:
         bg_color = SPACE_DARK  # (8, 8, 25) Dark blue
     elif environment_level == 1:
-        bg_color = (12, 8, 30)  # Slightly purple tint
+        bg_color = (15, 8, 35)  # Purple tint
     elif environment_level == 2:
-        bg_color = (20, 5, 25)  # More purple
+        bg_color = (25, 5, 20)  # Deep purple
     else:  # environment_level >= 3
-        bg_color = (25, 5, 30)  # Deep purple/magenta space
+        bg_color = (30, 5, 10)  # Reddish dark space
     screen.fill(bg_color)
 
     keys = pygame.key.get_pressed()
@@ -1401,7 +1401,9 @@ while running:
                             laser_warnings.clear()
                             active_lasers.clear()
                             path_hazards.clear()
-                            score += 50
+                            # Trigger hyperdrive cutscene
+                            hyperdrive_active = True
+                            hyperdrive_timer = 0
                         break
 
             # Check bullet-boss collisions (only when vulnerable, damage varies by boss type)
