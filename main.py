@@ -416,9 +416,9 @@ while running:
 
         # Draw laser warnings and active lasers
         for lw in laser_warnings[:]:
-            pygame.draw.line(screen, YELLOW, lw['start'], lw['end'], 4)
+            pygame.draw.line(screen, YELLOW, lw['start'], lw['end'], 5)
         for al in active_lasers[:]:
-            pygame.draw.line(screen, RED, al['start'], al['end'], 12)
+            pygame.draw.line(screen, RED, al['start'], al['end'], 16)
 
         # Draw path hazards (safe corridors in DARK_PURPLE outline)
         for path in path_hazards[:]:
@@ -541,7 +541,7 @@ while running:
                         pattern_pool = [0, 1, 2, 3, 4]
                         select_every = 90
                     else:
-                        pattern_pool = [0, 1, 2, 3, 4, 5, 5]
+                        pattern_pool = [0, 1, 2, 3, 4, 5, 5, 5]
                         select_every = 75
 
                     if boss['attack_timer'] % select_every == 0:
@@ -600,19 +600,46 @@ while running:
                         exploding_bullets.append({'x': boss_x, 'y': boss_y, 'vx': vx, 'vy': vy, 'fuse': fuse, 'max_fuse': fuse})
 
                     # 4: Telegraph lasers
-                    elif boss['attack_pattern'] == 4 and boss['attack_timer'] % 90 == 0:
-                        orientation = random.choice(['vertical', 'diagonal'])
-                        if orientation == 'vertical':
-                            x_pos = random.randint(80, SCREEN_WIDTH - 80)
-                            start = (x_pos, 0)
-                            end = (x_pos, SCREEN_HEIGHT)
+                    elif boss['attack_pattern'] == 4 and boss['attack_timer'] % 70 == 0:
+                        # Aim laser at player and extend to screen edges
+                        px = player_x + player_width // 2
+                        py = player_y + player_height // 2
+                        dx = px - boss_x
+                        dy = py - boss_y
+                        if dx == 0 and dy == 0:
+                            dx = 1
+                        intersections = []
+                        # vertical edges
+                        if dx != 0:
+                            t_left = (0 - boss_x) / dx
+                            y_left = boss_y + t_left * dy
+                            if 0 <= y_left <= SCREEN_HEIGHT:
+                                intersections.append((t_left, 0, y_left))
+                            t_right = (SCREEN_WIDTH - boss_x) / dx
+                            y_right = boss_y + t_right * dy
+                            if 0 <= y_right <= SCREEN_HEIGHT:
+                                intersections.append((t_right, SCREEN_WIDTH, y_right))
+                        # horizontal edges
+                        if dy != 0:
+                            t_top = (0 - boss_y) / dy
+                            x_top = boss_x + t_top * dx
+                            if 0 <= x_top <= SCREEN_WIDTH:
+                                intersections.append((t_top, x_top, 0))
+                            t_bottom = (SCREEN_HEIGHT - boss_y) / dy
+                            x_bottom = boss_x + t_bottom * dx
+                            if 0 <= x_bottom <= SCREEN_WIDTH:
+                                intersections.append((t_bottom, x_bottom, SCREEN_HEIGHT))
+                        if len(intersections) >= 2:
+                            intersections.sort(key=lambda v: v[0])
+                            start = (intersections[0][1], intersections[0][2])
+                            end = (intersections[-1][1], intersections[-1][2])
                         else:
                             start = (boss_x, boss_y)
-                            end = (random.randint(0, SCREEN_WIDTH), SCREEN_HEIGHT)
+                            end = (px, py)
                         laser_warnings.append({'start': start, 'end': end, 'charge': 60})
 
                     # 5: Winding path hazard (stage 4 only)
-                    elif boss['attack_pattern'] == 5 and boss['stage'] >= 4 and boss['attack_timer'] % 180 == 0:
+                    elif boss['attack_pattern'] == 5 and boss['stage'] >= 4 and boss['attack_timer'] % 150 == 0:
                         segment_height = SCREEN_HEIGHT // 6
                         corridor_width = 220
                         x_center = random.randint(corridor_width, SCREEN_WIDTH - corridor_width)
