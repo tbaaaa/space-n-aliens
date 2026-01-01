@@ -53,6 +53,7 @@ enemy_speed = 2
 enemies = []
 enemy_spawn_rate = 55  # frames
 enemy_bullets = []
+side_turrets = []  # Side enemies that shoot from edges
 
 # Boss
 boss = None
@@ -109,11 +110,12 @@ clock = pygame.time.Clock()
 FPS = 60
 
 def reset_game():
-    global player_x, bullets, enemies, enemy_bullets, boss, reflectable_projectiles, score, frame_count, player_hp, invincible, invincible_timer, boss_spawn_threshold, swarm_minions, grabbers, multiplying_bullets, exploding_bullets, laser_warnings, active_lasers, path_hazards, explosion_effects, grabbed, grab_escape_meter, stars, planets, planet_spawn_timer, hyperdrive_active, hyperdrive_timer, ship_shake_x, ship_shake_y, environment_level
+    global player_x, bullets, enemies, enemy_bullets, boss, reflectable_projectiles, score, frame_count, player_hp, invincible, invincible_timer, boss_spawn_threshold, swarm_minions, grabbers, multiplying_bullets, exploding_bullets, laser_warnings, active_lasers, path_hazards, explosion_effects, grabbed, grab_escape_meter, stars, planets, planet_spawn_timer, hyperdrive_active, hyperdrive_timer, ship_shake_x, ship_shake_y, environment_level, side_turrets
     player_x = SCREEN_WIDTH // 2 - player_width // 2
     bullets = []
     enemies = []
     enemy_bullets = []
+    side_turrets = []
     boss = None
     reflectable_projectiles = []
     swarm_minions = []
@@ -448,6 +450,15 @@ while running:
         # Draw enemy bullets
         for eb in enemy_bullets[:]:
             pygame.draw.circle(screen, RED, (int(eb[0]), int(eb[1])), 5)
+
+        # Draw side turrets
+        for turret in side_turrets[:]:
+            turret_color = ORANGE
+            if turret.get('warning_timer', 0) > 0:
+                # Flash red every 3 frames
+                if (turret['warning_timer'] // 3) % 2 == 0:
+                    turret_color = RED
+            pygame.draw.rect(screen, turret_color, (turret['x'], turret['y'], enemy_width, enemy_height))
 
         # Draw boss if active
         if boss:
@@ -1018,6 +1029,55 @@ while running:
                     new_enemy['shoot_cooldown'] = random.randint(base_cooldown, base_cooldown + 30)  # Reduced range
                 enemies.append(new_enemy)
 
+            # Spawn side turrets (after score 50)
+            if score >= 50 and frame_count % 300 == 0:  # Spawn every 5 seconds
+                if len(side_turrets) < 4:  # Max 4 turrets at once
+                    side = random.choice(['left', 'right'])
+                    turret_x = 10 if side == 'left' else SCREEN_WIDTH - enemy_width - 10
+                    turret_y = random.randint(50, SCREEN_HEIGHT - enemy_height - 50)
+                    side_turrets.append({
+                        'x': turret_x,
+                        'y': turret_y,
+                        'vy': random.choice([-2, 2]),  # Move up or down
+                        'side': side,
+                        'shoot_cooldown': random.randint(60, 100),
+                        'warning_timer': 0,
+                        'hp': 3  # Takes 3 hits to destroy
+                    })
+
+            # Update side turrets
+            for turret in side_turrets[:]:
+                # Move up and down, bounce at screen edges
+                turret['y'] += turret['vy']
+                if turret['y'] <= 0 or turret['y'] >= SCREEN_HEIGHT - enemy_height:
+                    turret['vy'] *= -1
+                    turret['y'] = max(0, min(turret['y'], SCREEN_HEIGHT - enemy_height))
+                
+                # Shooting logic
+                turret['shoot_cooldown'] -= 1
+                warning_duration = 6
+                
+                if turret['shoot_cooldown'] <= warning_duration and turret.get('warning_timer', 0) == 0:
+                    turret['warning_timer'] = warning_duration
+                
+                if turret.get('warning_timer', 0) > 0:
+                    turret['warning_timer'] -= 1
+                    if turret['warning_timer'] <= 0 and turret['shoot_cooldown'] <= 0:
+                        # Shoot at player
+                        turret_center_x = turret['x'] + enemy_width // 2
+                        turret_center_y = turret['y'] + enemy_height // 2
+                        player_center_x = player_x + player_width // 2
+                        player_center_y = player_y + player_height // 2
+                        dx = player_center_x - turret_center_x
+                        dy = player_center_y - turret_center_y
+                        dist = math.hypot(dx, dy)
+                        if dist > 0:
+                            vx = (dx / dist) * 6
+                            vy = (dy / dist) * 6
+                            enemy_bullets.append([turret_center_x, turret_center_y, vx, vy])
+                        turret['shoot_cooldown'] = random.randint(60, 100)
+                        turret['warning_timer'] = 0
+
             # Update enemies
             for enemy in enemies[:]:
                 if enemy['type'] == 'sine':
@@ -1404,6 +1464,7 @@ while running:
                             laser_warnings.clear()
                             active_lasers.clear()
                             path_hazards.clear()
+                            side_turrets.clear()
                             # Trigger hyperdrive cutscene
                             hyperdrive_active = True
                             hyperdrive_timer = 0
@@ -1434,6 +1495,7 @@ while running:
                             laser_warnings.clear()
                             active_lasers.clear()
                             path_hazards.clear()
+                            side_turrets.clear()
                             # Trigger hyperdrive cutscene
                             hyperdrive_active = True
                             hyperdrive_timer = 0
@@ -1451,6 +1513,20 @@ while running:
                         score += 1
                         break
 
+            # Check bullet-side turret collisions
+            for bullet in bullets[:]:
+                for turret in side_turrets[:]:
+                    if (bullet[0] < turret['x'] + enemy_width and
+                        bullet[0] + bullet_width > turret['x'] and
+                        bullet[1] < turret['y'] + enemy_height and
+                        bullet[1] + bullet_height > turret['y']):
+                        bullets.remove(bullet)
+                        turret['hp'] -= 1
+                        if turret['hp'] <= 0:
+                            side_turrets.remove(turret)
+                            score += 5  # Worth more points
+                        break
+
             # Check player-enemy collisions
             if not invincible and not debug_invincible and not hyperdrive_active:
                 for enemy in enemies[:]:
@@ -1459,6 +1535,20 @@ while running:
                         player_y < enemy['y'] + enemy_height and
                         player_y + player_height > enemy['y']):
                         enemies.remove(enemy)
+                        player_hp -= 1
+                        if player_hp <= 0:
+                            game_state = 'game_over'
+                        else:
+                            invincible = True
+                            invincible_timer = invincible_duration
+                        break
+                
+                # Check collision with side turrets
+                for turret in side_turrets[:]:
+                    if (player_x < turret['x'] + enemy_width and
+                        player_x + player_width > turret['x'] and
+                        player_y < turret['y'] + enemy_height and
+                        player_y + player_height > turret['y']):
                         player_hp -= 1
                         if player_hp <= 0:
                             game_state = 'game_over'
