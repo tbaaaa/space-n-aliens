@@ -65,6 +65,7 @@ exploding_bullets = []    # timed explosives
 laser_warnings = []       # telegraphed lasers before firing
 active_lasers = []        # active laser beams
 path_hazards = []         # winding corridor hazards
+explosion_effects = []    # visual explosions
 
 # Grab state
 grabbed = False
@@ -80,7 +81,7 @@ clock = pygame.time.Clock()
 FPS = 60
 
 def reset_game():
-    global player_x, bullets, enemies, enemy_bullets, boss, reflectable_projectiles, score, frame_count, player_hp, invincible, invincible_timer, boss_spawn_threshold, swarm_minions, grabbers, multiplying_bullets, exploding_bullets, laser_warnings, active_lasers, path_hazards, grabbed, grab_escape_meter
+    global player_x, bullets, enemies, enemy_bullets, boss, reflectable_projectiles, score, frame_count, player_hp, invincible, invincible_timer, boss_spawn_threshold, swarm_minions, grabbers, multiplying_bullets, exploding_bullets, laser_warnings, active_lasers, path_hazards, explosion_effects, grabbed, grab_escape_meter
     player_x = SCREEN_WIDTH // 2 - player_width // 2
     bullets = []
     enemies = []
@@ -94,6 +95,7 @@ def reset_game():
     laser_warnings = []
     active_lasers = []
     path_hazards = []
+    explosion_effects = []
     boss_spawn_threshold = 300
     score = 290
     frame_count = 0
@@ -404,11 +406,19 @@ while running:
             fuse_ratio = max(0, eb['fuse']) / eb['max_fuse']
             pygame.draw.circle(screen, YELLOW, (int(eb['x']), int(eb['y'])), max(2, int(10 * fuse_ratio)), 2)
 
+        # Draw explosion effects
+        for ex in explosion_effects[:]:
+            alpha = max(40, int(255 * (ex['life'] / ex['max_life'])))
+            radius = int(ex['radius'] * (1 - (ex['life'] / ex['max_life']) * 0.4))
+            surf = pygame.Surface((radius * 2 + 4, radius * 2 + 4), pygame.SRCALPHA)
+            pygame.draw.circle(surf, (255, 180, 0, alpha), (radius + 2, radius + 2), radius, 4)
+            screen.blit(surf, (ex['x'] - radius - 2, ex['y'] - radius - 2))
+
         # Draw laser warnings and active lasers
         for lw in laser_warnings[:]:
-            pygame.draw.line(screen, YELLOW, lw['start'], lw['end'], 3)
+            pygame.draw.line(screen, YELLOW, lw['start'], lw['end'], 4)
         for al in active_lasers[:]:
-            pygame.draw.line(screen, RED, al['start'], al['end'], 8)
+            pygame.draw.line(screen, RED, al['start'], al['end'], 12)
 
         # Draw path hazards (safe corridors in DARK_PURPLE outline)
         for path in path_hazards[:]:
@@ -531,7 +541,7 @@ while running:
                         pattern_pool = [0, 1, 2, 3, 4]
                         select_every = 90
                     else:
-                        pattern_pool = [0, 1, 2, 3, 4, 5]
+                        pattern_pool = [0, 1, 2, 3, 4, 5, 5]
                         select_every = 75
 
                     if boss['attack_timer'] % select_every == 0:
@@ -590,7 +600,7 @@ while running:
                         exploding_bullets.append({'x': boss_x, 'y': boss_y, 'vx': vx, 'vy': vy, 'fuse': fuse, 'max_fuse': fuse})
 
                     # 4: Telegraph lasers
-                    elif boss['attack_pattern'] == 4 and boss['attack_timer'] % 120 == 0:
+                    elif boss['attack_pattern'] == 4 and boss['attack_timer'] % 90 == 0:
                         orientation = random.choice(['vertical', 'diagonal'])
                         if orientation == 'vertical':
                             x_pos = random.randint(80, SCREEN_WIDTH - 80)
@@ -602,7 +612,7 @@ while running:
                         laser_warnings.append({'start': start, 'end': end, 'charge': 60})
 
                     # 5: Winding path hazard (stage 4 only)
-                    elif boss['attack_pattern'] == 5 and boss['stage'] >= 4 and boss['attack_timer'] % 220 == 0:
+                    elif boss['attack_pattern'] == 5 and boss['stage'] >= 4 and boss['attack_timer'] % 180 == 0:
                         segment_height = SCREEN_HEIGHT // 6
                         corridor_width = 220
                         x_center = random.randint(corridor_width, SCREEN_WIDTH - corridor_width)
@@ -963,10 +973,17 @@ while running:
                         else:
                             invincible = True
                             invincible_timer = invincible_duration
+                    explosion_effects.append({'x': eb['x'], 'y': eb['y'], 'radius': explosion_radius, 'life': 18, 'max_life': 18})
                     exploding_bullets.remove(eb)
                     continue
                 if eb['x'] < -40 or eb['x'] > SCREEN_WIDTH + 40 or eb['y'] < -40 or eb['y'] > SCREEN_HEIGHT + 40:
                     exploding_bullets.remove(eb)
+
+            # Update explosion effects
+            for ex in explosion_effects[:]:
+                ex['life'] -= 1
+                if ex['life'] <= 0:
+                    explosion_effects.remove(ex)
 
             # Update lasers
             for lw in laser_warnings[:]:
