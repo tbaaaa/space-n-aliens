@@ -113,7 +113,7 @@ clock = pygame.time.Clock()
 FPS = 60
 
 def reset_game():
-    global player_x, bullets, enemies, enemy_bullets, boss, reflectable_projectiles, score, frame_count, player_hp, invincible, invincible_timer, boss_spawn_threshold, swarm_minions, grabbers, multiplying_bullets, exploding_bullets, laser_warnings, active_lasers, path_hazards, explosion_effects, grabbed, grab_escape_meter, stars, planets, planet_spawn_timer, hyperdrive_active, hyperdrive_timer, ship_shake_x, ship_shake_y, environment_level, side_turrets
+    global player_x, bullets, enemies, enemy_bullets, boss, reflectable_projectiles, score, frame_count, player_hp, invincible, invincible_timer, boss_spawn_threshold, swarm_minions, grabbers, multiplying_bullets, exploding_bullets, laser_warnings, active_lasers, path_hazards, explosion_effects, grabbed, grab_escape_meter, stars, planets, planet_spawn_timer, hyperdrive_active, hyperdrive_timer, ship_shake_x, ship_shake_y, environment_level, side_turrets, horizontal_turrets, boss_1_defeated, boss_2_defeated
     player_x = SCREEN_WIDTH // 2 - player_width // 2
     bullets = []
     enemies = []
