@@ -34,6 +34,7 @@ player_x = SCREEN_WIDTH // 2 - player_width // 2
 player_y = SCREEN_HEIGHT - player_height - 10
 player_speed = 6
 player_hp = 3
+player_tilt = 0  # Tracks left/right tilt for ship visual
 invincible = False
 invincible_timer = 0
 invincible_duration = 120  # frames (2 seconds at 60 FPS)
@@ -275,10 +276,23 @@ while running:
         # Player movement (only when not paused)
         if game_state == 'playing':
             if not grabbed:
-                if keys[pygame.K_a] and player_x > 0:
+                # Track horizontal movement for tilt
+                moving_left = keys[pygame.K_a] and player_x > 0
+                moving_right = keys[pygame.K_d] and player_x < SCREEN_WIDTH - player_width
+                
+                if moving_left:
                     player_x -= current_player_speed
-                if keys[pygame.K_d] and player_x < SCREEN_WIDTH - player_width:
+                    player_tilt = max(-15, player_tilt - 2)  # Tilt left
+                elif moving_right:
                     player_x += current_player_speed
+                    player_tilt = min(15, player_tilt + 2)  # Tilt right
+                else:
+                    # Return to neutral
+                    if player_tilt > 0:
+                        player_tilt = max(0, player_tilt - 1)
+                    elif player_tilt < 0:
+                        player_tilt = min(0, player_tilt + 1)
+                
                 if keys[pygame.K_w] and player_y > 0:
                     player_y -= current_player_speed
                 if keys[pygame.K_s] and player_y < SCREEN_HEIGHT - player_height:
@@ -359,37 +373,70 @@ while running:
             shake_offset_x = ship_shake_x if hyperdrive_active else 0
             shake_offset_y = ship_shake_y if hyperdrive_active else 0
             
-            # Draw spaceship
-            # Calculate ship points with shake offset
+            # Calculate rotation angle based on mouse position
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            player_center_x = player_x + player_width // 2
+            player_center_y = player_y + player_height // 2
+            dx = mouse_x - player_center_x
+            dy = mouse_y - player_center_y
+            angle = math.degrees(math.atan2(dy, dx)) - 90  # -90 to make ship point up by default
+            
+            # Add tilt to angle
+            angle += player_tilt * 0.5
+            
+            # Helper function to rotate a point around center
+            def rotate_point(px, py, cx, cy, angle_rad):
+                s = math.sin(angle_rad)
+                c = math.cos(angle_rad)
+                px -= cx
+                py -= cy
+                rotated_x = px * c - py * s
+                rotated_y = px * s + py * c
+                return rotated_x + cx, rotated_y + cy
+            
+            # Draw spaceship with rotation
             ship_x = player_x + shake_offset_x
             ship_y = player_y + shake_offset_y
+            center_x = ship_x + player_width // 2
+            center_y = ship_y + player_height // 2
+            angle_rad = math.radians(angle)
             
-            # Main body (triangular nose pointing up)
-            ship_points = [
-                (ship_x + player_width // 2, ship_y),  # Nose
-                (ship_x + player_width - 5, ship_y + player_height - 10),  # Right rear
-                (ship_x + player_width // 2, ship_y + player_height - 5),  # Center rear
-                (ship_x + 5, ship_y + player_height - 10)  # Left rear
+            # Define ship points relative to center (pointing up by default)
+            # Main body
+            body_points_unrotated = [
+                (0, -player_height // 2),  # Nose
+                (player_width // 2 - 5, player_height // 2 - 10),  # Right rear
+                (0, player_height // 2 - 5),  # Center rear
+                (-player_width // 2 + 5, player_height // 2 - 10)  # Left rear
             ]
+            ship_points = [rotate_point(center_x + px, center_y + py, center_x, center_y, angle_rad) 
+                          for px, py in body_points_unrotated]
             pygame.draw.polygon(screen, player_color, ship_points)
             
-            # Wings
-            left_wing = [
-                (ship_x, ship_y + player_height - 15),
-                (ship_x + 5, ship_y + player_height - 10),
-                (ship_x + 10, ship_y + player_height)
+            # Left wing
+            left_wing_unrotated = [
+                (-player_width // 2, player_height // 2 - 15),
+                (-player_width // 2 + 5, player_height // 2 - 10),
+                (-player_width // 2 + 10, player_height // 2)
             ]
-            right_wing = [
-                (ship_x + player_width, ship_y + player_height - 15),
-                (ship_x + player_width - 5, ship_y + player_height - 10),
-                (ship_x + player_width - 10, ship_y + player_height)
-            ]
+            left_wing = [rotate_point(center_x + px, center_y + py, center_x, center_y, angle_rad)
+                        for px, py in left_wing_unrotated]
             pygame.draw.polygon(screen, player_color, left_wing)
+            
+            # Right wing
+            right_wing_unrotated = [
+                (player_width // 2, player_height // 2 - 15),
+                (player_width // 2 - 5, player_height // 2 - 10),
+                (player_width // 2 - 10, player_height // 2)
+            ]
+            right_wing = [rotate_point(center_x + px, center_y + py, center_x, center_y, angle_rad)
+                         for px, py in right_wing_unrotated]
             pygame.draw.polygon(screen, player_color, right_wing)
             
             # Cockpit (darker shade)
             cockpit_color = tuple(max(0, c - 50) for c in player_color)
-            pygame.draw.circle(screen, cockpit_color, (ship_x + player_width // 2, ship_y + 15), 5)
+            cockpit_x, cockpit_y = rotate_point(center_x, center_y - player_height // 2 + 15, center_x, center_y, angle_rad)
+            pygame.draw.circle(screen, cockpit_color, (int(cockpit_x), int(cockpit_y)), 5)
 
         # Draw and update star field background
         if game_state == 'playing' or game_state == 'paused':
