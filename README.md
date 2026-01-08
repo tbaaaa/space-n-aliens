@@ -14,9 +14,9 @@ Fight back against the alien invasion! Battle through waves of enemies and defea
 ## Installation
 
 ### Option 1: Download Executable (Recommended)
-Download the latest release from the [Releases page](https://github.com/tbaaaa/space-n-aliens/releases) and run the executable - no installation required!
+Download and play without installing python and dependencies
 
-### Option 2: Run from Source
+### Option 2: Run from Source (Tweak the src code for fun)
 1. Clone: `git clone https://github.com/tbaaaa/space-n-aliens.git`
 2. Install: `pip install pygame`
 3. Run: `python main.py`
