@@ -1,9 +1,0 @@
-# Build script for Space N Aliens executable
-
-# Run this command to create the executable:
-# pyinstaller --onefile --windowed --name "SpaceNAliens" --icon=icon.ico main.py
-
-# Or without icon (if you don't have one yet):
-# pyinstaller --onefile --windowed --name "SpaceNAliens" main.py
-
-# The executable will be in the dist/ folder after building
