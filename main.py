@@ -427,7 +427,7 @@ while running:
         
         # Hyperdrive screen flash effect
         if hyperdrive_active:
-            flash_intensity = int(abs(math.sin(hyperdrive_timer * 0.15) * 100))
+            flash_intensity = int(abs(math.sin(hyperdrive_timer * 0.08) * 100))
             flash_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
             flash_surf.set_alpha(flash_intensity)
             flash_surf.fill((255, 255, 255))
