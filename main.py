@@ -574,7 +574,37 @@ while running:
                 # Flash red every 3 frames
                 if (turret['warning_timer'] // 3) % 2 == 0:
                     turret_color = RED
-            pygame.draw.rect(screen, turret_color, (turret['x'], turret['y'], enemy_width, enemy_height))
+            
+            tx = turret['x']
+            ty = turret['y']
+            
+            # Pentagon body with point facing outward (left or right based on side)
+            if turret.get('side') == 'left':
+                # Point facing right
+                points = [
+                    (tx + enemy_width, ty + enemy_height // 2),  # Point (right)
+                    (tx + enemy_width - 10, ty),  # Top right
+                    (tx, ty + enemy_height // 3),  # Top left
+                    (tx, ty + 2 * enemy_height // 3),  # Bottom left
+                    (tx + enemy_width - 10, ty + enemy_height)  # Bottom right
+                ]
+            else:
+                # Point facing left
+                points = [
+                    (tx, ty + enemy_height // 2),  # Point (left)
+                    (tx + 10, ty),  # Top left
+                    (tx + enemy_width, ty + enemy_height // 3),  # Top right
+                    (tx + enemy_width, ty + 2 * enemy_height // 3),  # Bottom right
+                    (tx + 10, ty + enemy_height)  # Bottom left
+                ]
+            pygame.draw.polygon(screen, turret_color, points)
+            
+            # Gun barrel (darker rectangle)
+            barrel_color = tuple(max(0, c - 60) for c in turret_color)
+            if turret.get('side') == 'left':
+                pygame.draw.rect(screen, barrel_color, (tx + enemy_width - 8, ty + enemy_height // 2 - 3, 8, 6))
+            else:
+                pygame.draw.rect(screen, barrel_color, (tx, ty + enemy_height // 2 - 3, 8, 6))
 
         # Draw horizontal turrets
         for turret in horizontal_turrets[:]:
@@ -583,7 +613,27 @@ while running:
                 # Flash red during warning
                 if (turret['warning_timer'] // 3) % 2 == 0:
                     turret_color = RED
-            pygame.draw.rect(screen, turret_color, (turret['x'], turret['y'], enemy_width, enemy_height))
+            
+            tx = turret['x']
+            ty = turret['y']
+            
+            # Rectangle body oriented horizontally
+            pygame.draw.rect(screen, turret_color, (tx + 5, ty + 10, enemy_width - 10, enemy_height - 20))
+            
+            # Dual gun barrels pointing down/up based on edge
+            barrel_color = tuple(max(0, c - 60) for c in turret_color)
+            if turret.get('edge') == 'top':
+                # Barrels pointing down
+                pygame.draw.rect(screen, barrel_color, (tx + 15, ty + enemy_height - 10, 6, 10))
+                pygame.draw.rect(screen, barrel_color, (tx + enemy_width - 21, ty + enemy_height - 10, 6, 10))
+            else:
+                # Barrels pointing up
+                pygame.draw.rect(screen, barrel_color, (tx + 15, ty, 6, 10))
+                pygame.draw.rect(screen, barrel_color, (tx + enemy_width - 21, ty, 6, 10))
+            
+            # Center core indicator
+            core_color = tuple(max(0, c - 40) for c in turret_color)
+            pygame.draw.circle(screen, core_color, (tx + enemy_width // 2, ty + enemy_height // 2), 6)
 
         # Draw boss if active
         if boss:
