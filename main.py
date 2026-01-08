@@ -358,7 +358,38 @@ while running:
             # Apply ship shake during hyperdrive
             shake_offset_x = ship_shake_x if hyperdrive_active else 0
             shake_offset_y = ship_shake_y if hyperdrive_active else 0
-            pygame.draw.rect(screen, player_color, (player_x + shake_offset_x, player_y + shake_offset_y, player_width, player_height))
+            
+            # Draw spaceship
+            # Calculate ship points with shake offset
+            ship_x = player_x + shake_offset_x
+            ship_y = player_y + shake_offset_y
+            
+            # Main body (triangular nose pointing up)
+            ship_points = [
+                (ship_x + player_width // 2, ship_y),  # Nose
+                (ship_x + player_width - 5, ship_y + player_height - 10),  # Right rear
+                (ship_x + player_width // 2, ship_y + player_height - 5),  # Center rear
+                (ship_x + 5, ship_y + player_height - 10)  # Left rear
+            ]
+            pygame.draw.polygon(screen, player_color, ship_points)
+            
+            # Wings
+            left_wing = [
+                (ship_x, ship_y + player_height - 15),
+                (ship_x + 5, ship_y + player_height - 10),
+                (ship_x + 10, ship_y + player_height)
+            ]
+            right_wing = [
+                (ship_x + player_width, ship_y + player_height - 15),
+                (ship_x + player_width - 5, ship_y + player_height - 10),
+                (ship_x + player_width - 10, ship_y + player_height)
+            ]
+            pygame.draw.polygon(screen, player_color, left_wing)
+            pygame.draw.polygon(screen, player_color, right_wing)
+            
+            # Cockpit (darker shade)
+            cockpit_color = tuple(max(0, c - 50) for c in player_color)
+            pygame.draw.circle(screen, cockpit_color, (ship_x + player_width // 2, ship_y + 15), 5)
 
         # Draw and update star field background
         if game_state == 'playing' or game_state == 'paused':
