@@ -276,23 +276,10 @@ while running:
         # Player movement (only when not paused)
         if game_state == 'playing':
             if not grabbed:
-                # Track horizontal movement for tilt
-                moving_left = keys[pygame.K_a] and player_x > 0
-                moving_right = keys[pygame.K_d] and player_x < SCREEN_WIDTH - player_width
-                
-                if moving_left:
+                if keys[pygame.K_a] and player_x > 0:
                     player_x -= current_player_speed
-                    player_tilt = max(-15, player_tilt - 2)  # Tilt left
-                elif moving_right:
+                if keys[pygame.K_d] and player_x < SCREEN_WIDTH - player_width:
                     player_x += current_player_speed
-                    player_tilt = min(15, player_tilt + 2)  # Tilt right
-                else:
-                    # Return to neutral
-                    if player_tilt > 0:
-                        player_tilt = max(0, player_tilt - 1)
-                    elif player_tilt < 0:
-                        player_tilt = min(0, player_tilt + 1)
-                
                 if keys[pygame.K_w] and player_y > 0:
                     player_y -= current_player_speed
                 if keys[pygame.K_s] and player_y < SCREEN_HEIGHT - player_height:
@@ -379,10 +366,7 @@ while running:
             player_center_y = player_y + player_height // 2
             dx = mouse_x - player_center_x
             dy = mouse_y - player_center_y
-            angle = math.degrees(math.atan2(dy, dx)) - 90  # -90 to make ship point up by default
-            
-            # Add tilt to angle
-            angle += player_tilt * 0.5
+            angle = math.degrees(math.atan2(dy, dx)) + 90  # +90 to make ship point correctly
             
             # Helper function to rotate a point around center
             def rotate_point(px, py, cx, cy, angle_rad):
