@@ -513,7 +513,55 @@ while running:
                 # Flash dark purple every 3 frames (faster)
                 if (enemy['warning_timer'] // 3) % 2 == 0:
                     enemy_color = DARK_PURPLE
-            pygame.draw.rect(screen, enemy_color, (enemy['x'], enemy['y'], enemy_width, enemy_height))
+            
+            ex = enemy['x']
+            ey = enemy['y']
+            
+            # Different designs based on enemy type
+            if enemy['type'] == 'straight':
+                # Simple triangle pointing down
+                points = [
+                    (ex + enemy_width // 2, ey + enemy_height),  # Bottom point
+                    (ex, ey),  # Top left
+                    (ex + enemy_width, ey)  # Top right
+                ]
+                pygame.draw.polygon(screen, enemy_color, points)
+                
+            elif enemy['type'] == 'sine':
+                # Diamond shape (rotated square)
+                points = [
+                    (ex + enemy_width // 2, ey),  # Top
+                    (ex + enemy_width, ey + enemy_height // 2),  # Right
+                    (ex + enemy_width // 2, ey + enemy_height),  # Bottom
+                    (ex, ey + enemy_height // 2)  # Left
+                ]
+                pygame.draw.polygon(screen, enemy_color, points)
+                
+            elif enemy['type'] == 'zigzag':
+                # Hexagon
+                points = [
+                    (ex + enemy_width // 2, ey),  # Top
+                    (ex + enemy_width, ey + enemy_height // 3),  # Top right
+                    (ex + enemy_width, ey + 2 * enemy_height // 3),  # Bottom right
+                    (ex + enemy_width // 2, ey + enemy_height),  # Bottom
+                    (ex, ey + 2 * enemy_height // 3),  # Bottom left
+                    (ex, ey + enemy_height // 3)  # Top left
+                ]
+                pygame.draw.polygon(screen, enemy_color, points)
+                
+            elif enemy['type'] == 'shooter':
+                # Octagon (8-sided) for shooters
+                points = []
+                num_sides = 8
+                for i in range(num_sides):
+                    angle = 2 * math.pi * i / num_sides
+                    px = ex + enemy_width // 2 + (enemy_width // 2 - 2) * math.cos(angle)
+                    py = ey + enemy_height // 2 + (enemy_height // 2 - 2) * math.sin(angle)
+                    points.append((px, py))
+                pygame.draw.polygon(screen, enemy_color, points)
+                # Add a small circle in the center to indicate shooter
+                center_color = tuple(max(0, c - 50) for c in enemy_color)
+                pygame.draw.circle(screen, center_color, (ex + enemy_width // 2, ey + enemy_height // 2), 8)
 
         # Draw enemy bullets
         for eb in enemy_bullets[:]:
