@@ -166,7 +166,7 @@ while running:
     if environment_level == 0:
         bg_color = SPACE_DARK  # (8, 8, 25) Dark blue
     elif environment_level == 1:
-        bg_color = (15, 8, 35)  # Purple tint
+        bg_color = (25, 20, 5)  # Yellowish space
     elif environment_level == 2:
         bg_color = (25, 5, 20)  # Deep purple
     else:  # environment_level >= 3
